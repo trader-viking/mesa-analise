@@ -13,8 +13,13 @@ from __future__ import annotations
 import logging
 import re
 import unicodedata
+import warnings
 
-import pdfplumber
+# aviso de biblioteca (ARC4 movida de lugar no cryptography); não é problema nosso
+warnings.filterwarnings("ignore", message=".*ARC4.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="pypdf.*")
+
+import pdfplumber  # noqa: E402
 
 # o PDF traz fontes sem FontBBox; o aviso é inofensivo e polui a saída
 logging.getLogger("pdfminer").setLevel(logging.ERROR)

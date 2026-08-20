@@ -23,7 +23,9 @@ GitHub é só a pasta `site/`, com poucos KB por dia.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import re
 import subprocess
 import sys
 import time
@@ -67,15 +69,42 @@ def varrer(dia_filtro=None):
     return dias
 
 
+def nome_de_cache(pdf: Path) -> str:
+    """Achata pdfs/<data>/<liga>/arquivo.pdf num único nome de arquivo.
+
+    Precisa juntar as partes com .parts, e não trocar '/' no texto: no Windows
+    o separador é '\\', a troca não pegaria e o nome viraria subpasta inexistente.
+    """
+    bruto = "__".join(pdf.relative_to(PDFS).parts)
+    limpo = re.sub(r"[^\w.\-]+", "_", bruto, flags=re.UNICODE).strip("_")
+    if len(limpo) > 120:                       # Windows corta caminho longo
+        curto = hashlib.sha1(bruto.encode("utf-8")).hexdigest()[:10]
+        limpo = limpo[:100] + "_" + curto
+    return limpo + ".json"
+
+
 def ler_com_cache(pdf: Path, usar_cache=True):
-    """Ler 71 páginas leva alguns segundos; o cache evita reprocessar."""
-    CACHE.mkdir(exist_ok=True)
-    chave = CACHE / (str(pdf.relative_to(PDFS)).replace("/", "__") + ".json")
-    if usar_cache and chave.exists() and chave.stat().st_mtime >= pdf.stat().st_mtime:
-        return json.loads(chave.read_text(encoding="utf-8"))
+    """Ler 71 páginas leva alguns segundos; o cache evita reprocessar.
+
+    O cache é conveniência, nunca requisito: se ele falhar (disco cheio, permissão,
+    arquivo corrompido), a análise segue lendo o PDF do zero.
+    """
+    chave = None
+    try:
+        CACHE.mkdir(parents=True, exist_ok=True)
+        chave = CACHE / nome_de_cache(pdf)
+        if usar_cache and chave.exists() and chave.stat().st_mtime >= pdf.stat().st_mtime:
+            return json.loads(chave.read_text(encoding="utf-8"))
+    except Exception:
+        chave = None
+
     jogo = leitor_pdf.ler_pdf(pdf)
-    if jogo:
-        chave.write_text(json.dumps(jogo, ensure_ascii=False), encoding="utf-8")
+
+    if jogo and chave is not None:
+        try:
+            chave.write_text(json.dumps(jogo, ensure_ascii=False), encoding="utf-8")
+        except Exception as exc:
+            print(f"  (aviso: não deu para guardar o cache de {pdf.name} — {exc})")
     return jogo
 
 

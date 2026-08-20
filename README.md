@@ -10,7 +10,7 @@ operacionais e publica um site com os quadros do dia.
 ## Como funciona
 
 ```
-pdfs/  →  publicar.py  →  site/  →  GitHub Pages
+site  →  baixar_pdfs.py  →  pdfs/  →  publicar.py  →  site/  →  GitHub Pages
 ```
 
 A análise roda **na sua máquina**. Só a pasta `site/` (poucos KB por dia) vai para o GitHub —
@@ -23,6 +23,46 @@ git clone https://github.com/SEU-USUARIO/mesa-analise.git
 cd mesa-analise
 pip install -r requirements.txt
 ```
+
+## Baixar os PDFs do site (opcional)
+
+O `baixar_pdfs.py` abre cada partida no navegador, clica as abas, salva a página como PDF —
+exatamente o que você faz à mão — e já guarda o arquivo na pasta certa com o nome certo.
+
+```bash
+pip install -r requirements-baixar.txt
+python3 -m playwright install chromium
+```
+
+**Uma vez só — entrar na sua conta:**
+
+```bash
+python3 baixar_pdfs.py --login
+```
+
+Abre uma janela do navegador. Você entra na sua conta normalmente e volta ao terminal.
+A sessão fica guardada em `.sessao.json` (que está no `.gitignore`, não vai para o GitHub).
+**Sua senha nunca é digitada no script nem guardada em lugar nenhum.**
+
+**No dia a dia:**
+
+```bash
+cp urls-exemplo.txt urls.txt          # cole os links das partidas do dia
+python3 baixar_pdfs.py --urls urls.txt
+```
+
+Ou, se você preencher `pagina_do_dia` e `seletor_links_partida` em `analise/site.json`,
+ele acha as partidas sozinho:
+
+```bash
+python3 baixar_pdfs.py --dia 15-08-2026
+```
+
+Depois de imprimir cada PDF, o script **lê o próprio arquivo** com o mesmo leitor da análise e
+tira dali horário, times e liga. Ele não precisa saber onde o site mostra essas informações na
+tela — basta o PDF sair no formato de sempre. Arquivo que já existe é pulado (`--forcar` refaz).
+
+Se a sessão expirar, todas as partidas falham de uma vez: rode `--login` de novo.
 
 ## Uso diário
 
@@ -136,6 +176,8 @@ analise/
   leitor_pdf.py   extração posicional e leitura do relatório de partida
   relatorio.py    geração do HTML
   criterios.json  seus limiares
+  site.json       endereços e ajustes do baixador
+baixar_pdfs.py    pega os PDFs do site (login uma vez, sessão reaproveitada)
 publicar.py       comando único: analisa, gera o site e publica
 testes/           verificações do motor (rodam no CI a cada push)
 site/             saída publicada — é o que o GitHub Pages serve

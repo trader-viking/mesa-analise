@@ -1,0 +1,25 @@
+{
+  "_leia": "Endereços e ajustes do site de onde vêm os PDFs. Só 'base' é obrigatório para o login. Deixe 'pagina_do_dia' e 'seletor_links_partida' em branco se você for usar urls.txt.",
+
+  "base": "",
+
+  "_pagina_do_dia": "Endereço da lista de jogos do dia. Use {data} para AAAA-MM-DD ou {dia} para DD-MM-AAAA.",
+  "pagina_do_dia": "",
+
+  "_seletor_links_partida": "Seletor CSS dos links de cada partida nessa lista. Ex.: a.match-link, ou table a[href*='/partida/']",
+  "seletor_links_partida": "",
+
+  "_abas": "Nomes exatos das abas a clicar antes de imprimir. Aba que não existir na partida é ignorada.",
+  "abas": ["Geral", "Odds", "H2H", "Desempenho", "Gols", "Cartões", "Escanteios", "Jogadores"],
+
+  "_esperaMs": "Pausa depois de cada clique e antes de imprimir. Aumente se o site for lento.",
+  "esperaMs": 1200,
+
+  "rolarAntesDeImprimir": true,
+
+  "pdf": {
+    "format": "A4",
+    "print_background": true,
+    "margin": { "top": "10mm", "bottom": "10mm", "left": "8mm", "right": "8mm" }
+  }
+}
