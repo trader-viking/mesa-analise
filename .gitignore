@@ -1,0 +1,9 @@
+# Os PDFs ficam só na sua máquina: 16 MB cada, e o histórico do git é eterno.
+pdfs/*
+!pdfs/LEIA-ME.txt
+.cache/
+
+__pycache__/
+*.pyc
+.venv/
+.DS_Store

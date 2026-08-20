@@ -1,0 +1,9 @@
+{
+ "geral": {
+  "banca": 1000,
+  "comissao": 6.5
+ },
+ "ligas": {
+  "lista": ""
+ }
+}

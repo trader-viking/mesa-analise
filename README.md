@@ -1,0 +1,166 @@
+# Mesa de Análise
+
+Análise de partidas para trading esportivo. Lê os relatórios em PDF, aplica os quatro métodos
+operacionais e publica um site com os quadros do dia.
+
+**Métodos:** Back Favorito · Lay Zebra · Over Limite (+1 gol, ao vivo) · Back 2x2
+
+---
+
+## Como funciona
+
+```
+pdfs/  →  publicar.py  →  site/  →  GitHub Pages
+```
+
+A análise roda **na sua máquina**. Só a pasta `site/` (poucos KB por dia) vai para o GitHub —
+os PDFs ficam de fora, porque cada um tem ~16 MB e o histórico do git é permanente.
+
+## Instalação (uma vez)
+
+```bash
+git clone https://github.com/SEU-USUARIO/mesa-analise.git
+cd mesa-analise
+pip install -r requirements.txt
+```
+
+## Uso diário
+
+Coloque os PDFs na estrutura que você já usa:
+
+```
+pdfs/
+  15-08-2026/
+    Brasileirão/
+      004_16h00_Grêmio_x_São_Paulo.pdf
+    Premier League/
+      001_11h00_Arsenal_x_Everton.pdf
+```
+
+O nome da pasta do meio vira a **data** e o da pasta interna vira a **liga** de cada jogo.
+
+```bash
+python3 publicar.py           # analisa e gera o site local
+python3 publicar.py --push    # analisa, gera e publica no GitHub
+```
+
+Outras opções:
+
+```bash
+python3 publicar.py --dia 15-08-2026   # processa só um dia
+python3 publicar.py --sem-cache        # reprocessa PDFs já lidos
+```
+
+Cada PDF leva uns 15 segundos na primeira leitura (são 71 páginas). Depois fica em cache e o
+reprocessamento é instantâneo — um dia inteiro sai em menos de um segundo.
+
+---
+
+## Publicar no GitHub (uma vez)
+
+1. Crie um repositório **público** chamado `mesa-analise` no GitHub, sem README.
+
+2. No terminal, dentro desta pasta:
+
+```bash
+git init
+git add .
+git commit -m "Mesa de Análise"
+git branch -M main
+git remote add origin https://github.com/SEU-USUARIO/mesa-analise.git
+git push -u origin main
+```
+
+3. No GitHub: **Settings → Pages → Source: GitHub Actions**.
+
+4. Rode `python3 publicar.py --push`. Em um ou dois minutos o site estará em:
+
+```
+https://SEU-USUARIO.github.io/mesa-analise/
+```
+
+O índice lista todos os dias publicados. Cada dia tem a grade de quadros e o arquivo
+`analise.json` com os números brutos, caso você queira levar para uma planilha.
+
+---
+
+## Critérios
+
+Ficam em `analise/criterios.json`. Tudo que não estiver no arquivo usa o padrão de `motor.py`.
+
+```json
+{
+  "geral": { "banca": 1000, "comissao": 6.5, "kelly": 0.25, "stakeMax": 3.0 },
+  "ligas": { "lista": "Brasileirão, Premier League" },
+  "BACK_FAV":  { "probMin": 60, "aprovAdvMax": 40 },
+  "LAY_ZEBRA": { "probMax": 20, "derrotas5Min": 3, "gsZebraMin": 2.0 },
+  "OVER":      { "minutoGatilho": 65, "minutoFim": 70, "probMin": 55 },
+  "BACK22":    { "over25Min": 60, "bttsMin": 60, "gsAmbosMin": 1.2 }
+}
+```
+
+`ligas.lista` vazia aceita todas as competições. Com nomes preenchidos, jogos de outras ligas
+vão para o Quadro 2 com esse motivo.
+
+### Os critérios em vigor
+
+| Método | Exige |
+|---|---|
+| **Back Favorito** | prob. de vitória ≥ 60% · favorito em casa **ou** claramente superior · adversário com aproveitamento recente < 40% |
+| **Lay Zebra** | prob. da zebra ≤ 20% · 3+ derrotas nos últimos 5 **ou** defesa sofrendo ≥ 2.0 |
+| **Over Limite** | só ao vivo, gatilho aos 65'–70' · linha = gols atuais + 0.5 · probabilidade tirada da tabela MOMENTO DOS GOLS |
+| **Back 2x2** | over 2.5 médio ≥ 60% · ambas marcam ≥ 60% · **as duas** defesas sofrendo ≥ 1.2 |
+
+Três parâmetros são acréscimos de engenharia, não critérios seus, e podem ser zerados: as odds
+de guarda, o `lambdaTotalMin` do Over Limite e a margem exigida sobre a odd justa (`evMin`).
+
+---
+
+## O que o relatório entrega
+
+Cada jogo aprovado vira um quadro com **partida · mercado sugerido · odd · stake em % e em reais**
+e a etiqueta AO VIVO ou PRÉ-LIVE. Clicando, abre o detalhe: motivo, o que faz seguir ou descartar
+a entrada ao vivo, momento de entrada e saída, números do modelo, tabela de momento dos gols,
+histórico com aproveitamento por faixa de favoritismo e todas as odds do mercado pré.
+
+A **odd recomendada** é o entregável principal: o preço a partir do qual a entrada tem a margem
+exigida — mínima em back, **máxima** em lay.
+
+---
+
+## Estrutura
+
+```
+analise/
+  motor.py        cálculo: Poisson, remoção de margem, EV, Kelly, os quatro métodos
+  leitor_pdf.py   extração posicional e leitura do relatório de partida
+  relatorio.py    geração do HTML
+  criterios.json  seus limiares
+publicar.py       comando único: analisa, gera o site e publica
+testes/           verificações do motor (rodam no CI a cada push)
+site/             saída publicada — é o que o GitHub Pages serve
+pdfs/             seus PDFs (fora do repositório)
+```
+
+## Notas sobre a leitura dos PDFs
+
+Três detalhes do formato que já estão tratados e vale conhecer:
+
+- Cada linha de tabela começa com um caractere invisível de ícone (área privada do Unicode).
+  Sem limpar, nenhuma expressão regular ancorada em início de linha funciona.
+- No começo de temporada a tabela **Aproveitamento** vem zerada. Nesse caso as médias são
+  derivadas da faixa dos últimos 8 jogos, e o relatório avisa. Como essa derivação não corrige
+  a força do adversário, o peso do mercado no modelo sobe de 0.50 para 0.75.
+- Na aba H2H, o marcador `AP` de prorrogação é desenhado abaixo do placar e aparece no jogo
+  seguinte na ordem do texto. Além disso, jogo que foi para a prorrogação terminou empatado no
+  tempo normal — é assim que o 1X2 liquida, e é assim que o histórico por faixa conta.
+
+## Testes
+
+```bash
+python3 testes/test_motor.py
+```
+
+Conferem que as probabilidades somam 1, que o EV na odd recomendada é exatamente a margem
+configurada (back e lay), que a inversão odds → gols esperados → odds fecha, e que o Kelly
+nunca sugere stake em aposta de valor negativo. Rodam no CI a cada push.

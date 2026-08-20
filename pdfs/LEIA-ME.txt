@@ -1,0 +1,6 @@
+Coloque os PDFs aqui, nesta estrutura:
+
+  pdfs/15-08-2026/Brasileirão/004_16h00_Grêmio_x_São_Paulo.pdf
+       ^data       ^liga        ^arquivo do jogo
+
+Esta pasta está no .gitignore e não vai para o GitHub.
