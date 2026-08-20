@@ -1,18 +1,21 @@
 {
-  "_leia": "Endereços e ajustes do site de onde vêm os PDFs. Só 'base' é obrigatório para o login. Deixe 'pagina_do_dia' e 'seletor_links_partida' em branco se você for usar urls.txt.",
+  "_leia": "Endereços e ajustes do site de onde vêm os PDFs (Clube do Theo Borges).",
 
-  "base": "",
+  "base": "https://clube.theoborges.com/",
 
-  "_pagina_do_dia": "Endereço da lista de jogos do dia. Use {data} para AAAA-MM-DD ou {dia} para DD-MM-AAAA.",
-  "pagina_do_dia": "",
+  "_pagina_do_dia": "Lista de jogos. {quando} vira hoje ou amanha, conforme o --quando.",
+  "pagina_do_dia": "https://clube.theoborges.com/matches?dia={quando}",
 
-  "_seletor_links_partida": "Seletor CSS dos links de cada partida nessa lista. Ex.: a.match-link, ou table a[href*='/partida/']",
+  "_seletor_links_partida": "Seletor CSS dos links de partida. Em branco = descoberta automática pelo padrão abaixo.",
   "seletor_links_partida": "",
+
+  "_padrao_link_partida": "Usado só quando o seletor está em branco: pega todo link cujo endereço bate com esta expressão.",
+  "padrao_link_partida": "/match",
 
   "_abas": "Nomes exatos das abas a clicar antes de imprimir. Aba que não existir na partida é ignorada.",
   "abas": ["Geral", "Odds", "H2H", "Desempenho", "Gols", "Cartões", "Escanteios", "Jogadores"],
 
-  "_esperaMs": "Pausa depois de cada clique e antes de imprimir. Aumente se o site for lento.",
+  "_esperaMs": "Pausa depois de cada clique e antes de imprimir. Aumente se o site estiver lento.",
   "esperaMs": 1200,
 
   "rolarAntesDeImprimir": true,

@@ -26,8 +26,9 @@ pip install -r requirements.txt
 
 ## Baixar os PDFs do site (opcional)
 
-O `baixar_pdfs.py` abre cada partida no navegador, clica as abas, salva a página como PDF —
-exatamente o que você faz à mão — e já guarda o arquivo na pasta certa com o nome certo.
+O `baixar_pdfs.py` abre cada partida no **Clube do Theo Borges** (`clube.theoborges.com`),
+clica as abas, salva a página como PDF — exatamente o que você faz à mão — e já guarda o
+arquivo na pasta certa com o nome certo.
 
 ```bash
 pip install -r requirements-baixar.txt
@@ -47,15 +48,17 @@ A sessão fica guardada em `.sessao.json` (que está no `.gitignore`, não vai p
 **No dia a dia:**
 
 ```bash
-cp urls-exemplo.txt urls.txt          # cole os links das partidas do dia
-python3 baixar_pdfs.py --urls urls.txt
+python3 baixar_pdfs.py                  # partidas de hoje
+python3 baixar_pdfs.py --quando amanha  # partidas de amanhã
 ```
 
-Ou, se você preencher `pagina_do_dia` e `seletor_links_partida` em `analise/site.json`,
-ele acha as partidas sozinho:
+Ele abre `clube.theoborges.com/matches?dia=hoje`, recolhe os links de partida e imprime um por um.
+
+Se algum link não for reconhecido, dá para listar à mão:
 
 ```bash
-python3 baixar_pdfs.py --dia 15-08-2026
+cp urls-exemplo.txt urls.txt          # cole os links das partidas
+python3 baixar_pdfs.py --urls urls.txt
 ```
 
 Depois de imprimir cada PDF, o script **lê o próprio arquivo** com o mesmo leitor da análise e
