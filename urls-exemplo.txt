@@ -1,0 +1,5 @@
+# Um endereço de partida por linha. Linhas em branco e linhas com # são ignoradas.
+# Copie este arquivo para urls.txt e cole os links das partidas do dia.
+#
+# https://site.com/partida/12345
+# https://site.com/partida/12346

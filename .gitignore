@@ -3,6 +3,11 @@ pdfs/*
 !pdfs/LEIA-ME.txt
 .cache/
 
+# Sessão do site e lista de partidas — nunca vão para o GitHub.
+.sessao.json
+urls.txt
+.baixando/
+
 __pycache__/
 *.pyc
 .venv/

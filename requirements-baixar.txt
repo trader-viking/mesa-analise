@@ -1,0 +1,3 @@
+# Só para baixar_pdfs.py. A análise não precisa disto.
+# Depois de instalar, rode também:  python3 -m playwright install chromium
+playwright>=1.44

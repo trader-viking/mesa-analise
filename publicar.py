@@ -161,21 +161,47 @@ def copiar_app():
 def git(*args, checar=True):
     r = subprocess.run(["git", *args], cwd=RAIZ, capture_output=True, text=True)
     if checar and r.returncode != 0:
-        raise RuntimeError(f'git {" ".join(args)} falhou:\n{r.stderr.strip()}')
+        detalhe = (r.stderr.strip() or r.stdout.strip() or f"código {r.returncode}")
+        raise RuntimeError(f'git {" ".join(args)} falhou:\n{detalhe}')
     return r.stdout.strip()
+
+
+def tem_upstream(ramo):
+    r = subprocess.run(["git", "rev-parse", "--abbrev-ref", f"{ramo}@{{upstream}}"],
+                       cwd=RAIZ, capture_output=True, text=True)
+    return r.returncode == 0
 
 
 def publicar_no_github(mensagem):
     if not (RAIZ / ".git").exists():
         print("\nEste diretório ainda não é um repositório git. Rode os comandos do README.")
         return
-    git("add", "site", "analise", "publicar.py", "README.md", checar=False)
+
+    if not git("remote", checar=False):
+        print("\nFalta dizer para qual repositório enviar. Rode uma vez:\n"
+              "  git remote add origin https://github.com/SEU-USUARIO/mesa-analise.git")
+        return
+
+    # um `git add` por caminho: se um deles não existir, os outros ainda entram
+    for alvo in ("site", "analise", "publicar.py", "baixar_pdfs.py", "README.md"):
+        if (RAIZ / alvo).exists():
+            git("add", alvo, checar=False)
+
     status = git("status", "--porcelain", "site", "analise")
     if not status:
         print("\nNada mudou desde a última publicação.")
         return
     git("commit", "-m", mensagem)
-    git("push")
+
+    # No primeiro envio o ramo local ainda não conhece o do GitHub. Em vez de
+    # falhar pedindo --set-upstream, faz isso sozinho.
+    ramo = git("rev-parse", "--abbrev-ref", "HEAD") or "main"
+    if tem_upstream(ramo):
+        git("push")
+    else:
+        print(f"Primeiro envio do ramo '{ramo}' — ligando ao GitHub.")
+        git("push", "--set-upstream", "origin", ramo)
+
     print("\nPublicado. O GitHub Pages atualiza em 1 a 2 minutos.")
 
 
