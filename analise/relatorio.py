@@ -11,6 +11,8 @@ import re
 import unicodedata
 from pathlib import Path
 
+import identidade
+
 # as mesmas quatro cores de método do aplicativo (--m1 a --m4)
 CORES = {"BACK_FAV": "#4C7EF3", "LAY_ZEBRA": "#A97BF0", "OVER": "#25B49B", "BACK22": "#E0A02F"}
 FAIXAS_ROT = ["0–15'", "16–30'", "31–45'", "46–60'", "61–75'", "76–90'"]
@@ -66,9 +68,12 @@ button{font:inherit;cursor:pointer}
 .topbar{position:sticky;top:0;z-index:50;background:rgba(14,17,22,.92);
   backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 .topbar-in{max-width:1680px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px}
-.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--pos);box-shadow:0 0 0 3px rgba(52,196,138,.15);flex:none}
-.brand h1{font-size:15px}
+.brand{display:flex;align-items:center;gap:11px}
+.brand .marca{width:26px;height:auto;flex:none}
+.brand h1{font-size:16px;font-weight:700;letter-spacing:-.02em}
+.brand h1 em{font-style:normal;font-weight:400;color:var(--tx2);letter-spacing:.01em}
+.topbar-in .dot{width:8px;height:8px;border-radius:50%;background:var(--pos);
+  box-shadow:0 0 0 3px rgba(52,196,138,.15);flex:none}
 .brand span{color:var(--tx3);font-size:11px;display:block;font-weight:400;letter-spacing:.04em;text-transform:uppercase}
 .spacer{flex:1}
 .pg{max-width:1680px;margin:0 auto;padding:20px 20px 60px}
@@ -367,36 +372,20 @@ def _botao_instalar():
 
 
 def _escrever_icones(destino: Path):
-    """Ícone sem texto: só formas, para não depender de fonte instalada."""
+    """Ícones do aplicativo, desenhados a partir da mesma geometria do símbolo."""
     try:
-        from PIL import Image, ImageDraw
+        import PIL  # noqa: F401
     except ImportError:
         print("  (aviso: Pillow não encontrado — o site fica sem ícone e o navegador não vai\n"
               "   oferecer a instalação. Rode: pip install pillow)")
         return False
 
-    def desenhar(lado, margem):
-        img = Image.new("RGBA", (lado, lado), (0, 0, 0, 0))
-        d = ImageDraw.Draw(img)
-        raio = int(lado * 0.22)
-        d.rounded_rectangle([0, 0, lado - 1, lado - 1], radius=raio, fill="#0E1116")
-
-        util = lado - 2 * margem
-        larg = int(util * 0.14)
-        vao = int((util - 4 * larg) / 3)
-        alturas = [0.42, 0.68, 0.90, 0.56]        # silhueta de barras, como um gráfico
-        cores = ["#4C7EF3", "#A97BF0", "#25B49B", "#E0A02F"]
-        base = margem + util
-        for i, (h, cor) in enumerate(zip(alturas, cores)):
-            x = margem + i * (larg + vao)
-            y = base - int(util * h)
-            d.rounded_rectangle([x, y, x + larg, base], radius=int(larg * 0.35), fill=cor)
-        return img
-
-    # ícone comum usa a moldura toda; o maskable recua 20%, que é a zona segura
-    desenhar(512, int(512 * 0.20)).save(destino / "icone-512.png")
-    desenhar(512, int(512 * 0.20)).resize((192, 192), Image.LANCZOS).save(destino / "icone-192.png")
-    desenhar(512, int(512 * 0.30)).save(destino / "icone-mask.png")
+    identidade.png_icone(destino / "icone-512.png", 512)
+    identidade.png_icone(destino / "icone-192.png", 192)
+    # maskable: o Android corta as bordas, então o desenho recua para a zona segura
+    identidade.png_icone(destino / "icone-mask.png", 512, recuo=0.27)
+    (destino / "marca.svg").write_text(identidade.svg_simbolo(120), encoding="utf-8")
+    (destino / "icone.svg").write_text(identidade.svg_icone(512), encoding="utf-8")
     return True
 
 
@@ -479,15 +468,21 @@ async function montarImagem(card){
     c.textAlign = "left";
   }
 
-  // cabeçalho
+  // cabeçalho: a marca, o nome e o @
+  desenharMarca(c, P, 42, 38);
   c.textBaseline = "alphabetic";
-  c.font = `700 21px ${FONTE}`; c.fillStyle = CORES_IMG.tx3;
-  c.fillText("MESA DE ANÁLISE", P, 74);
+  const xNome = P + 52;
+  c.font = `700 25px ${FONTE}`; c.fillStyle = CORES_IMG.tx;
+  c.fillText("MESA", xNome, 72);
+  const lgNome = c.measureText("MESA").width;
+  c.font = `400 25px ${FONTE}`; c.fillStyle = CORES_IMG.tx2;
+  c.fillText(" de Análise", xNome + lgNome, 72);
   if (MARCA){
-    const lg = c.measureText("MESA DE ANÁLISE").width;
-    c.fillStyle = CORES_IMG.tx2;
-    c.fillText(MARCA, P + lg + 18, 74);
+    const lgTudo = lgNome + c.measureText(" de Análise").width;
+    c.font = `700 21px ${FONTE}`; c.fillStyle = CORES_IMG.tx3;
+    c.fillText(MARCA, xNome + lgTudo + 20, 72);
   }
+  c.font = `700 21px ${FONTE}`;
   c.textAlign = "right"; c.fillStyle = CORES_IMG.tx3;
   c.fillText(String(d.data || "").toUpperCase(), S-P, 74);
   c.textAlign = "left";
@@ -776,9 +771,10 @@ def _filtros(entradas):
 
 def _topo(titulo, sub=""):
     """A mesma barra do aplicativo, para o site e o aplicativo parecerem a mesma coisa."""
-    return (f'<div class="topbar"><div class="topbar-in"><div class="brand"><i class="dot"></i>'
-            f'<div><h1>Mesa de Análise</h1><span>{e(sub or titulo)}</span></div></div>'
-            f'<div class="spacer"></div></div></div>')
+    marca = identidade.svg_simbolo(30, atributos='class="marca"')
+    return (f'<div class="topbar"><div class="topbar-in"><div class="brand">{marca}'
+            f'<div><h1>Mesa <em>de Análise</em></h1><span>{e(sub or titulo)}</span></div></div>'
+            f'<div class="spacer"></div><i class="dot" title="no ar"></i></div></div>')
 
 
 def _bloco(rot, conteudo, largo=False):
@@ -1023,7 +1019,7 @@ const MARCA = {json.dumps(cfg["geral"].get("marca") or "")};
 const RAIZ_SITE = "../";
 const AVISO_FAZENDA = {json.dumps(AVISO_FAZENDA)};
 const AVISO_APOIO = {json.dumps(AVISO_APOIO)};
-{JS_BANCA}{JS_IMAGEM}{JS_FILTROS}{JS_PWA}</script></body></html>"""
+{identidade.js_simbolo()}{JS_BANCA}{JS_IMAGEM}{JS_FILTROS}{JS_PWA}</script></body></html>"""
 
 
 def pagina_indice(dias, titulo="Mesa de Análise"):
