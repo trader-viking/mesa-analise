@@ -37,6 +37,7 @@ CFG_PADRAO = {
         "maxEntradas": 0,
         "exigirValor": False,     # True = só lista se a odd do PDF já tiver valor
         "permitirEstimativa": True,
+        "marca": "",              # @ do dono, vira marca d'água nas imagens
     },
     "ligas": {"lista": ""},       # vazio = todas as ligas passam
     "faixas": {"superFav": 1.50, "favorito": 2.20, "parelho": 3.20},

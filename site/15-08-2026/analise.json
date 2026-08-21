@@ -13,7 +13,8 @@
    "fatorMando": 1.12,
    "maxEntradas": 0,
    "exigirValor": false,
-   "permitirEstimativa": true
+   "permitirEstimativa": true,
+   "marca": "@felipebenicio09"
   },
   "ligas": {
    "lista": ""

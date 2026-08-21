@@ -1,9 +1,10 @@
 {
- "geral": {
-  "banca": 1000,
-  "comissao": 6.5
- },
- "ligas": {
-  "lista": ""
- }
+  "geral": {
+    "banca": 1000,
+    "comissao": 6.5,
+    "marca": "@felipebenicio09"
+  },
+  "ligas": {
+    "lista": ""
+  }
 }

@@ -200,6 +200,17 @@ tr.dentro td.barra i{background:var(--m3)}
 .mut{color:var(--tx3)}
 .rodape{margin-top:24px;color:var(--tx3);font-size:12px;line-height:1.6}
 
+/* ---------- advertências ---------- */
+.legal{margin-top:18px;border:1px solid var(--line);border-left:3px solid var(--warn);
+  border-radius:var(--r);background:rgba(224,160,47,.05);padding:14px 16px}
+.legal-forte{font-size:13.5px;font-weight:700;color:#E9C98A;letter-spacing:.01em}
+.legal-linha{margin-top:7px;font-size:12.5px;color:var(--tx2);display:flex;align-items:center;
+  gap:9px;flex-wrap:wrap}
+.legal .idade{display:inline-grid;place-items:center;min-width:34px;height:24px;padding:0 7px;
+  border-radius:6px;background:#B3261E;color:#fff;font-size:12px;font-weight:800;letter-spacing:.02em}
+.legal-nota{margin-top:9px;font-size:11.5px;line-height:1.65;color:var(--tx3)}
+.legal-nota a{color:var(--tx2);text-decoration:underline}
+
 /* ---------- índice de dias ---------- */
 .dias{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
 .dia{background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--m1);
@@ -222,6 +233,32 @@ tr.dentro td.barra i{background:var(--m3)}
   .bl b,.dia b{color:#000}
 }
 """
+
+
+# Advertências da Portaria SPA/MF nº 1.964/2026 (em vigor desde 17/07/2026), que
+# alterou a Portaria SPA/MF nº 1.231/2024. São três frases admitidas; usamos a
+# primeira. A norma exige que a advertência ocupe no mínimo 10% da peça — daí a
+# tarja de 108 px na imagem de 1080 px.
+AVISO_FAZENDA = "Ministério da Fazenda adverte: Apostar pode causar dependência."
+AVISO_APOIO = ("Proibido para menores de 18 anos · Aposta não é investimento · "
+               "Jogue com responsabilidade")
+AVISOS_ALTERNATIVOS = [
+    "Ministério da Fazenda adverte: Apostar faz você perder dinheiro.",
+    "Ministério da Fazenda adverte: Aposta não é investimento.",
+]
+
+
+def _rodape_legal():
+    return f"""<div class="legal">
+  <div class="legal-forte">{e(AVISO_FAZENDA)}</div>
+  <div class="legal-linha"><span class="idade">18+</span> {e(AVISO_APOIO)}</div>
+  <div class="legal-nota">Este site é material de análise próprio; não é convite, promessa de
+  ganho nem indicação de casa de apostas. Resultado passado não garante resultado futuro, e
+  qualquer entrada pode dar prejuízo. Se apostar deixou de ser diversão, procure ajuda:
+  <a href="https://jogadoresanonimos.com.br" target="_blank" rel="noopener">Jogadores Anônimos</a>
+  ou <a href="https://cvv.org.br" target="_blank" rel="noopener">CVV</a> (ligue 188, 24h,
+  gratuito).</div>
+</div>"""
 
 
 # o botão "Imagem" desenha o quadro num canvas e baixa um PNG quadrado, do
@@ -278,11 +315,29 @@ async function montarImagem(card){
   c.fillStyle = CORES_IMG.bg; c.fillRect(0,0,S,S);
   c.fillStyle = d.cor;        c.fillRect(0,0,S,9);
 
+  // marca d'água: entra antes do conteúdo, para ficar atrás e não atrapalhar a leitura
+  if (MARCA){
+    c.save();
+    c.translate(S/2, S/2); c.rotate(-24 * Math.PI / 180);
+    c.textAlign = "center"; c.textBaseline = "middle";
+    c.font = `800 92px ${FONTE}`;
+    c.fillStyle = "rgba(255,255,255,.055)";
+    c.fillText(MARCA, 0, 0);
+    c.restore();
+    c.textAlign = "left";
+  }
+
   // cabeçalho
   c.textBaseline = "alphabetic";
   c.font = `700 21px ${FONTE}`; c.fillStyle = CORES_IMG.tx3;
   c.fillText("MESA DE ANÁLISE", P, 74);
-  c.textAlign = "right"; c.fillText(String(d.data || "").toUpperCase(), S-P, 74);
+  if (MARCA){
+    const lg = c.measureText("MESA DE ANÁLISE").width;
+    c.fillStyle = CORES_IMG.tx2;
+    c.fillText(MARCA, P + lg + 18, 74);
+  }
+  c.textAlign = "right"; c.fillStyle = CORES_IMG.tx3;
+  c.fillText(String(d.data || "").toUpperCase(), S-P, 74);
   c.textAlign = "left";
 
   // hora + etiqueta
@@ -332,8 +387,9 @@ async function montarImagem(card){
   c.fillStyle = CORES_IMG.tx2; c.font = `400 27px ${FONTE}`;
   for (const l of _linhas(c, d.motivo, S - P*2, 4)){ c.fillText(l, P, y); y += 38; }
 
-  // números, ancorados embaixo
-  const cx = S - P*2, bh = 132, by = S - P - bh - 46;
+  // números, ancorados acima da tarja de advertência
+  const BANDA = Math.round(S * 0.10);      // a norma pede no mínimo 10% da peça
+  const cx = S - P*2, bh = 132, by = S - BANDA - 26 - bh;
 
   // o espaço que sobrar entre o motivo e os números vira leitura ao vivo:
   // quantas linhas couberem, sem nunca invadir os números
@@ -369,8 +425,15 @@ async function montarImagem(card){
     ? "· " + brlJS(d.stakeNum / 100 * BANCA) : d.reais;
   bloco(P + cx/2 + 7, "stake", d.stake, reais);
 
-  c.fillStyle = CORES_IMG.tx3; c.font = `400 21px ${FONTE}`;
-  c.fillText(d.rodape || "", P, S - P + 8);
+  // tarja de advertência — ocupa os 10% de baixo, em fundo próprio para contrastar
+  c.fillStyle = "#0A0D11"; c.fillRect(0, S - BANDA, S, BANDA);
+  c.fillStyle = "#3A4756"; c.fillRect(0, S - BANDA, S, 1);
+  c.textAlign = "center";
+  c.fillStyle = "#E7ECF3"; c.font = `700 27px ${FONTE}`;
+  c.fillText(AVISO_FAZENDA, S/2, S - BANDA + 44);
+  c.fillStyle = "#94A1B2"; c.font = `600 22px ${FONTE}`;
+  c.fillText(AVISO_APOIO, S/2, S - BANDA + 80);
+  c.textAlign = "left";
   return cv;
 }
 
@@ -799,9 +862,13 @@ banca de <b id="k-banca">{brl(banca)}</b> · comissão {cfg["geral"]["comissao"]
 mínima em back, máxima em lay. O botão <b>Imagem</b> em cada quadro baixa um PNG quadrado, pronto
 para mandar no grupo. Trocar a <b>banca</b> no topo recalcula os valores em reais na hora — a stake
 em % não muda, porque ela já é uma fração da banca. Gerado automaticamente a partir dos PDFs do dia.</div>
+{_rodape_legal()}
 </div><script>
 const BANCA_INICIAL = {banca:.2f};
 const RISCO_PCT = {risco:.4f};
+const MARCA = {json.dumps(cfg["geral"].get("marca") or "")};
+const AVISO_FAZENDA = {json.dumps(AVISO_FAZENDA)};
+const AVISO_APOIO = {json.dumps(AVISO_APOIO)};
 {JS_BANCA}{JS_IMAGEM}{JS_FILTROS}</script></body></html>"""
 
 
@@ -820,6 +887,7 @@ def pagina_indice(dias, titulo="Mesa de Análise"):
 <div class="dias">{cartoes or "<p>Nenhum relatório publicado ainda.</p>"}</div>
 <div class="rodape">Cada página traz os quadros do dia: partida, mercado sugerido, motivo e
 leitura ao vivo. Clique em um quadro para abrir o detalhe.</div>
+{_rodape_legal()}
 </div></body></html>"""
 
 
