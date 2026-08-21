@@ -9,6 +9,8 @@ faz à mão, e já guarda o arquivo em pdfs/<data>/<liga>/ com o nome certo.
     python3 baixar_pdfs.py                      baixa as partidas de hoje
     python3 baixar_pdfs.py --quando amanha      baixa as partidas de amanhã
     python3 baixar_pdfs.py --urls urls.txt      baixa só os links do arquivo
+    python3 baixar_pdfs.py --listar             só mostra o que achou, sem baixar
+    python3 baixar_pdfs.py --limite 2           baixa só as duas primeiras (teste)
 
 Como o nome do arquivo é decidido
 ---------------------------------
@@ -31,6 +33,7 @@ import time
 import unicodedata
 from datetime import date, datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 RAIZ = Path(__file__).resolve().parent
 sys.path.insert(0, str(RAIZ / "analise"))
@@ -182,8 +185,16 @@ def coletar_urls(cfg, dia, urls_arquivo, quando="hoje"):
             # sem seletor configurado: pega todo link que pareça de partida
             hrefs = pg.eval_on_selector_all("a[href]", "els => els.map(e => e.href)")
             padrao = re.compile(cfg.get("padrao_link_partida") or r"/match")
-            base_lista = alvo.split("?")[0]
-            hrefs = [h for h in hrefs if h and padrao.search(h) and h.split("?")[0] != base_lista]
+            # a própria lista costuma casar com o padrão ("/matches?dia=amanha"),
+            # e ela não é partida nenhuma — fora pelo caminho, ignorando a query
+            caminho_lista = urlparse(pg.url).path
+            hrefs = [h for h in hrefs
+                     if h and padrao.search(h) and urlparse(h).path != caminho_lista]
+
+        # só links do próprio site: um padrão frouxo como "/match" casaria com
+        # link de patrocinador ou de rede social sem este corte
+        casa = urlparse(pg.url).netloc
+        hrefs = [h for h in hrefs if urlparse(h).netloc == casa]
         nav.close()
 
     vistos, saida = set(), []
@@ -258,6 +269,10 @@ def main():
                     help="qual lista do site abrir (padrão: hoje)")
     ap.add_argument("--dia", help="força a pasta do dia, no formato 15-08-2026")
     ap.add_argument("--forcar", action="store_true", help="rebaixa mesmo se o arquivo já existir")
+    ap.add_argument("--listar", action="store_true",
+                    help="só mostra as partidas encontradas, sem baixar nada")
+    ap.add_argument("--limite", type=int,
+                    help="baixa no máximo N partidas (bom para testar)")
     args = ap.parse_args()
 
     cfg = carregar_config()
@@ -281,6 +296,20 @@ def main():
     urls = coletar_urls(cfg, args.dia, args.urls, args.quando)
     if not urls:
         return 1
+
+    if args.listar:
+        print(f"{len(urls)} partida(s) encontrada(s):\n")
+        for i, u in enumerate(urls, 1):
+            print(f"  {i:3d}. {u}")
+        print("\nSe a lista estiver certa, rode de novo sem --listar.\n"
+              "Se vier link demais ou de menos, ajuste 'padrao_link_partida' "
+              "ou 'seletor_links_partida' em analise/site.json.")
+        return 0
+
+    if args.limite and args.limite < len(urls):
+        print(f"(--limite {args.limite}: das {len(urls)} encontradas, baixando só as primeiras)")
+        urls = urls[:args.limite]
+
     print(f"{len(urls)} partida(s) para baixar.\n")
 
     t0 = time.time()

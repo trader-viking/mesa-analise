@@ -48,11 +48,16 @@ A sessão fica guardada em `.sessao.json` (que está no `.gitignore`, não vai p
 **No dia a dia:**
 
 ```bash
+python3 baixar_pdfs.py --listar         # confere o que ele achou, sem baixar
 python3 baixar_pdfs.py                  # partidas de hoje
 python3 baixar_pdfs.py --quando amanha  # partidas de amanhã
 ```
 
 Ele abre `clube.theoborges.com/matches?dia=hoje`, recolhe os links de partida e imprime um por um.
+
+Comece pelo `--listar`: ele não baixa nada, só mostra os endereços encontrados. É a forma barata
+de saber se a lista está certa antes de gastar ~15 segundos por partida. O `--limite 2` baixa só
+as duas primeiras, para um teste de ponta a ponta.
 
 Se algum link não for reconhecido, dá para listar à mão:
 
@@ -60,6 +65,21 @@ Se algum link não for reconhecido, dá para listar à mão:
 cp urls-exemplo.txt urls.txt          # cole os links das partidas
 python3 baixar_pdfs.py --urls urls.txt
 ```
+
+### Como ele acha as partidas
+
+Em `analise/site.json`:
+
+| Campo | Para que serve |
+|---|---|
+| `pagina_do_dia` | A lista de jogos. `{quando}` vira `hoje`/`amanha` conforme o `--quando`; `{data}` vira `AAAA-MM-DD` e `{dia}` vira `DD-MM-AAAA` quando você passa `--dia`. |
+| `seletor_links_partida` | Seletor CSS dos links de partida. Preenchido, manda em tudo. |
+| `padrao_link_partida` | Usado **só** quando o seletor está vazio: expressão que o endereço precisa conter. O padrão `/match` é largo de propósito — funciona sem você precisar inspecionar o HTML do site. |
+
+Duas coisas são descartadas sozinhas, para o padrão largo não atrapalhar: links para fora do site
+(patrocinador, rede social) e a própria página da lista, que quase sempre casa com o padrão por
+causa do botão "amanhã". Se ainda vier link demais, aperte o padrão — `"/match/\\d+"`, por
+exemplo, exige um número depois de `/match/`.
 
 Depois de imprimir cada PDF, o script **lê o próprio arquivo** com o mesmo leitor da análise e
 tira dali horário, times e liga. Ele não precisa saber onde o site mostra essas informações na
