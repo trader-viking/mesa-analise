@@ -147,6 +147,30 @@ O índice lista todos os dias publicados. Cada dia tem a grade de quadros e o ar
 
 ---
 
+## Instalar como aplicativo (PWA)
+
+O site é instalável. Abra o endereço do GitHub Pages e clique em **⤓ Instalar app** — o botão só
+aparece quando o navegador confirma que dá para instalar.
+
+- **Android / Chrome / Edge:** o botão abre a instalação. Sem ele, use o menu ⋮ → *Instalar
+  aplicativo*.
+- **iPhone / iPad:** o Safari não tem esse prompt. Toque em *Compartilhar* → *Adicionar à Tela de
+  Início*. O botão explica isso se for tocado no iOS.
+
+Depois de instalado, abre em janela própria, com ícone na tela inicial e sem barra de endereço.
+
+**Funciona offline** para o que você já abriu: um *service worker* busca na rede primeiro e cai no
+cache quando não há conexão. A ordem importa — cache primeiro mostraria o relatório de ontem como
+se fosse o de hoje, e isso é pior do que não abrir.
+
+Os arquivos (`manifest.webmanifest`, `sw.js`, `icone-*.png`) são gerados pelo `publicar.py` a cada
+publicação. Os ícones precisam do Pillow, que já vem com o `pdfplumber`.
+
+Só funciona em **https** — ou seja, no GitHub Pages. Abrindo o `site/index.html` direto do disco a
+instalação não é oferecida.
+
+---
+
 ## Critérios
 
 Ficam em `analise/criterios.json`. Tudo que não estiver no arquivo usa o padrão de `motor.py`.

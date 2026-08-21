@@ -248,6 +248,158 @@ AVISOS_ALTERNATIVOS = [
 ]
 
 
+PWA_NOME = "Mesa de Análise"
+
+
+def _manifesto():
+    return json.dumps({
+        "name": PWA_NOME,
+        "short_name": "Mesa",
+        "description": "Quadros operacionais do dia — análise de partidas para trading esportivo.",
+        "lang": "pt-BR",
+        # relativo: o site mora em /<repositorio>/ no GitHub Pages, não na raiz do domínio
+        "start_url": "./",
+        "scope": "./",
+        "display": "standalone",
+        "orientation": "any",
+        "background_color": "#0E1116",
+        "theme_color": "#0E1116",
+        "icons": [
+            {"src": "icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+            {"src": "icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+            {"src": "icone-mask.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+        ],
+    }, ensure_ascii=False, indent=2)
+
+
+# Rede primeiro, cache como rede de segurança: o relatório do dia muda, então
+# servir cache primeiro mostraria dado velho. Offline, cai no que já foi visto.
+SW_JS = r"""
+const CACHE = "mesa-v1";
+const ESSENCIAIS = ["./", "./index.html", "./manifest.webmanifest"];
+
+self.addEventListener("install", ev => {
+  ev.waitUntil(caches.open(CACHE).then(c => c.addAll(ESSENCIAIS)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener("activate", ev => {
+  ev.waitUntil(
+    caches.keys()
+      .then(ns => Promise.all(ns.filter(n => n !== CACHE).map(n => caches.delete(n))))
+      .then(() => self.clients.claim()));
+});
+
+self.addEventListener("fetch", ev => {
+  const req = ev.request;
+  if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
+  ev.respondWith(
+    fetch(req)
+      .then(resp => {
+        if (resp && resp.ok){
+          const copia = resp.clone();
+          caches.open(CACHE).then(c => c.put(req, copia));
+        }
+        return resp;
+      })
+      .catch(() => caches.match(req).then(r => r || caches.match("./index.html"))));
+});
+"""
+
+JS_PWA = r"""
+// O botão de instalar só aparece quando o navegador diz que dá para instalar.
+let promptInstalar = null;
+
+window.addEventListener("beforeinstallprompt", ev => {
+  ev.preventDefault();
+  promptInstalar = ev;
+  const b = document.getElementById("b-instalar");
+  if (b) b.hidden = false;
+});
+
+window.addEventListener("appinstalled", () => {
+  promptInstalar = null;
+  const b = document.getElementById("b-instalar");
+  if (b) b.hidden = true;
+});
+
+async function instalar(){
+  if (promptInstalar){
+    promptInstalar.prompt();
+    await promptInstalar.userChoice;
+    promptInstalar = null;
+    const b = document.getElementById("b-instalar");
+    if (b) b.hidden = true;
+    return;
+  }
+  // iPhone e iPad não têm o prompt: lá a instalação é pelo menu Compartilhar
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  alert(ios
+    ? "No iPhone/iPad: toque em Compartilhar (o quadrado com a seta) e escolha "
+      + "\"Adicionar à Tela de Início\"."
+    : "Seu navegador não ofereceu a instalação. No Chrome, procure o ícone de instalar "
+      + "na barra de endereço, ou o menu ⋮ → \"Instalar aplicativo\".");
+}
+
+if ("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register(RAIZ_SITE + "sw.js", {scope: RAIZ_SITE})
+      .catch(() => {});   // file:// e http não registram — a página funciona igual
+  });
+}
+"""
+
+
+def _cabeca_pwa(prefixo=""):
+    """Tags que tornam a página instalável. `prefixo` = caminho até a raiz do site."""
+    return (f'<link rel="manifest" href="{prefixo}manifest.webmanifest">'
+            f'<meta name="theme-color" content="#0E1116">'
+            f'<meta name="mobile-web-app-capable" content="yes">'
+            f'<meta name="apple-mobile-web-app-capable" content="yes">'
+            f'<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">'
+            f'<meta name="apple-mobile-web-app-title" content="Mesa">'
+            f'<link rel="apple-touch-icon" href="{prefixo}icone-192.png">'
+            f'<link rel="icon" href="{prefixo}icone-192.png">')
+
+
+def _botao_instalar():
+    return ('<button id="b-instalar" hidden onclick="instalar()" '
+            'title="Instalar como aplicativo">⤓ Instalar app</button>')
+
+
+def _escrever_icones(destino: Path):
+    """Ícone sem texto: só formas, para não depender de fonte instalada."""
+    try:
+        from PIL import Image, ImageDraw
+    except ImportError:
+        print("  (aviso: Pillow não encontrado — o site fica sem ícone e o navegador não vai\n"
+              "   oferecer a instalação. Rode: pip install pillow)")
+        return False
+
+    def desenhar(lado, margem):
+        img = Image.new("RGBA", (lado, lado), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        raio = int(lado * 0.22)
+        d.rounded_rectangle([0, 0, lado - 1, lado - 1], radius=raio, fill="#0E1116")
+
+        util = lado - 2 * margem
+        larg = int(util * 0.14)
+        vao = int((util - 4 * larg) / 3)
+        alturas = [0.42, 0.68, 0.90, 0.56]        # silhueta de barras, como um gráfico
+        cores = ["#4C7EF3", "#A97BF0", "#25B49B", "#E0A02F"]
+        base = margem + util
+        for i, (h, cor) in enumerate(zip(alturas, cores)):
+            x = margem + i * (larg + vao)
+            y = base - int(util * h)
+            d.rounded_rectangle([x, y, x + larg, base], radius=int(larg * 0.35), fill=cor)
+        return img
+
+    # ícone comum usa a moldura toda; o maskable recua 20%, que é a zona segura
+    desenhar(512, int(512 * 0.20)).save(destino / "icone-512.png")
+    desenhar(512, int(512 * 0.20)).resize((192, 192), Image.LANCZOS).save(destino / "icone-192.png")
+    desenhar(512, int(512 * 0.30)).save(destino / "icone-mask.png")
+    return True
+
+
 def _rodape_legal():
     return f"""<div class="legal">
   <div class="legal-forte">{e(AVISO_FAZENDA)}</div>
@@ -827,7 +979,7 @@ def pagina_do_dia(analise, data, voltar="../index.html"):
     cards = "".join(_card(x, cfg, data) for x in entradas)
     return f"""<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Relatório — {e(data)}</title><style>{CSS}</style></head><body>
+<title>Relatório — {e(data)}</title>{_cabeca_pwa("../")}<style>{CSS}</style></head><body>
 {_topo(data, f"Relatório do dia · {data}")}
 <div class="pg">
 <div class="sub">{len(entradas)} entrada(s) selecionada(s) de {len(entradas)+len(analise["descartes"])} jogo(s) analisado(s) ·
@@ -846,6 +998,7 @@ banca de <b id="k-banca">{brl(banca)}</b> · comissão {cfg["geral"]["comissao"]
   <button onclick="document.querySelectorAll('details.jogo:not(.fora)').forEach(d=>d.open=true)">Expandir todos</button>
   <button onclick="document.querySelectorAll('details.jogo').forEach(d=>d.open=false)">Recolher todos</button>
   <button onclick="window.print()">Imprimir</button>
+  {_botao_instalar()}
   <span class="spacer"></span>
   <label class="banca">Banca
     <input class="inp" id="f-banca" type="number" min="1" step="50" value="{banca:.0f}"
@@ -867,9 +1020,10 @@ em % não muda, porque ela já é uma fração da banca. Gerado automaticamente 
 const BANCA_INICIAL = {banca:.2f};
 const RISCO_PCT = {risco:.4f};
 const MARCA = {json.dumps(cfg["geral"].get("marca") or "")};
+const RAIZ_SITE = "../";
 const AVISO_FAZENDA = {json.dumps(AVISO_FAZENDA)};
 const AVISO_APOIO = {json.dumps(AVISO_APOIO)};
-{JS_BANCA}{JS_IMAGEM}{JS_FILTROS}</script></body></html>"""
+{JS_BANCA}{JS_IMAGEM}{JS_FILTROS}{JS_PWA}</script></body></html>"""
 
 
 def pagina_indice(dias, titulo="Mesa de Análise"):
@@ -879,16 +1033,16 @@ def pagina_indice(dias, titulo="Mesa de Análise"):
         for d in dias)
     return f"""<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{e(titulo)}</title><style>{CSS}</style></head><body>
+<title>{e(titulo)}</title>{_cabeca_pwa("")}<style>{CSS}</style></head><body>
 {_topo(titulo, "Relatórios publicados")}
 <div class="pg">
 <div class="sub">Do mais recente para o mais antigo.</div>
-<div class="acoes"><a href="app.html">Abrir o aplicativo →</a></div>
+<div class="acoes"><a href="app.html">Abrir o aplicativo →</a>{_botao_instalar()}</div>
 <div class="dias">{cartoes or "<p>Nenhum relatório publicado ainda.</p>"}</div>
 <div class="rodape">Cada página traz os quadros do dia: partida, mercado sugerido, motivo e
 leitura ao vivo. Clique em um quadro para abrir o detalhe.</div>
 {_rodape_legal()}
-</div></body></html>"""
+</div><script>const RAIZ_SITE = "./";{JS_PWA}</script></body></html>"""
 
 
 def escrever_site(destino: Path, dias: list[dict]):
@@ -906,4 +1060,9 @@ def escrever_site(destino: Path, dias: list[dict]):
                        "entradas": len(d["analise"]["entradas"]),
                        "descartes": len(d["analise"]["descartes"])})
     (destino / "index.html").write_text(pagina_indice(resumo), encoding="utf-8")
+
+    # arquivos que tornam o site instalável como aplicativo
+    (destino / "manifest.webmanifest").write_text(_manifesto(), encoding="utf-8")
+    (destino / "sw.js").write_text(SW_JS, encoding="utf-8")
+    _escrever_icones(destino)
     return resumo

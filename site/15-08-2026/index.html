@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Relatório — 15-08-2026</title><style>
+<title>Relatório — 15-08-2026</title><link rel="manifest" href="../manifest.webmanifest"><meta name="theme-color" content="#0E1116"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Mesa"><link rel="apple-touch-icon" href="../icone-192.png"><link rel="icon" href="../icone-192.png"><style>
 :root{
   --bg:#0E1116; --panel:#151A21; --panel2:#1B222B; --line:#28313D;
   --tx:#E7ECF3; --tx2:#94A1B2; --tx3:#66707E;
@@ -205,6 +205,7 @@ banca de <b id="k-banca">R$ 1.000,00</b> · comissão 6.5%
   <button onclick="document.querySelectorAll('details.jogo:not(.fora)').forEach(d=>d.open=true)">Expandir todos</button>
   <button onclick="document.querySelectorAll('details.jogo').forEach(d=>d.open=false)">Recolher todos</button>
   <button onclick="window.print()">Imprimir</button>
+  <button id="b-instalar" hidden onclick="instalar()" title="Instalar como aplicativo">⤓ Instalar app</button>
   <span class="spacer"></span>
   <label class="banca">Banca
     <input class="inp" id="f-banca" type="number" min="1" step="50" value="1000"
@@ -297,6 +298,7 @@ em % não muda, porque ela já é uma fração da banca. Gerado automaticamente 
 const BANCA_INICIAL = 1000.00;
 const RISCO_PCT = 2.7800;
 const MARCA = "@felipebenicio09";
+const RAIZ_SITE = "../";
 const AVISO_FAZENDA = "Minist\u00e9rio da Fazenda adverte: Apostar pode causar depend\u00eancia.";
 const AVISO_APOIO = "Proibido para menores de 18 anos \u00b7 Aposta n\u00e3o \u00e9 investimento \u00b7 Jogue com responsabilidade";
 
@@ -599,4 +601,45 @@ function limparFiltros(){
 }
 
 document.addEventListener("DOMContentLoaded", filtrar);
+
+// O botão de instalar só aparece quando o navegador diz que dá para instalar.
+let promptInstalar = null;
+
+window.addEventListener("beforeinstallprompt", ev => {
+  ev.preventDefault();
+  promptInstalar = ev;
+  const b = document.getElementById("b-instalar");
+  if (b) b.hidden = false;
+});
+
+window.addEventListener("appinstalled", () => {
+  promptInstalar = null;
+  const b = document.getElementById("b-instalar");
+  if (b) b.hidden = true;
+});
+
+async function instalar(){
+  if (promptInstalar){
+    promptInstalar.prompt();
+    await promptInstalar.userChoice;
+    promptInstalar = null;
+    const b = document.getElementById("b-instalar");
+    if (b) b.hidden = true;
+    return;
+  }
+  // iPhone e iPad não têm o prompt: lá a instalação é pelo menu Compartilhar
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  alert(ios
+    ? "No iPhone/iPad: toque em Compartilhar (o quadrado com a seta) e escolha "
+      + "\"Adicionar à Tela de Início\"."
+    : "Seu navegador não ofereceu a instalação. No Chrome, procure o ícone de instalar "
+      + "na barra de endereço, ou o menu ⋮ → \"Instalar aplicativo\".");
+}
+
+if ("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register(RAIZ_SITE + "sw.js", {scope: RAIZ_SITE})
+      .catch(() => {});   // file:// e http não registram — a página funciona igual
+  });
+}
 </script></body></html>

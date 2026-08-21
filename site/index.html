@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mesa de Análise</title><style>
+<title>Mesa de Análise</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0E1116"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Mesa"><link rel="apple-touch-icon" href="icone-192.png"><link rel="icon" href="icone-192.png"><style>
 :root{
   --bg:#0E1116; --panel:#151A21; --panel2:#1B222B; --line:#28313D;
   --tx:#E7ECF3; --tx2:#94A1B2; --tx3:#66707E;
@@ -190,7 +190,7 @@ tr.dentro td.barra i{background:var(--m3)}
 <div class="topbar"><div class="topbar-in"><div class="brand"><i class="dot"></i><div><h1>Mesa de Análise</h1><span>Relatórios publicados</span></div></div><div class="spacer"></div></div></div>
 <div class="pg">
 <div class="sub">Do mais recente para o mais antigo.</div>
-<div class="acoes"><a href="app.html">Abrir o aplicativo →</a></div>
+<div class="acoes"><a href="app.html">Abrir o aplicativo →</a><button id="b-instalar" hidden onclick="instalar()" title="Instalar como aplicativo">⤓ Instalar app</button></div>
 <div class="dias"><a class="dia" href="2026-08-21/index.html"><b>2026-08-21</b><span>12 entrada(s) · 6 descartado(s)</span></a></div>
 <div class="rodape">Cada página traz os quadros do dia: partida, mercado sugerido, motivo e
 leitura ao vivo. Clique em um quadro para abrir o detalhe.</div>
@@ -204,4 +204,45 @@ leitura ao vivo. Clique em um quadro para abrir o detalhe.</div>
   ou <a href="https://cvv.org.br" target="_blank" rel="noopener">CVV</a> (ligue 188, 24h,
   gratuito).</div>
 </div>
-</div></body></html>
+</div><script>const RAIZ_SITE = "./";
+// O botão de instalar só aparece quando o navegador diz que dá para instalar.
+let promptInstalar = null;
+
+window.addEventListener("beforeinstallprompt", ev => {
+  ev.preventDefault();
+  promptInstalar = ev;
+  const b = document.getElementById("b-instalar");
+  if (b) b.hidden = false;
+});
+
+window.addEventListener("appinstalled", () => {
+  promptInstalar = null;
+  const b = document.getElementById("b-instalar");
+  if (b) b.hidden = true;
+});
+
+async function instalar(){
+  if (promptInstalar){
+    promptInstalar.prompt();
+    await promptInstalar.userChoice;
+    promptInstalar = null;
+    const b = document.getElementById("b-instalar");
+    if (b) b.hidden = true;
+    return;
+  }
+  // iPhone e iPad não têm o prompt: lá a instalação é pelo menu Compartilhar
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  alert(ios
+    ? "No iPhone/iPad: toque em Compartilhar (o quadrado com a seta) e escolha "
+      + "\"Adicionar à Tela de Início\"."
+    : "Seu navegador não ofereceu a instalação. No Chrome, procure o ícone de instalar "
+      + "na barra de endereço, ou o menu ⋮ → \"Instalar aplicativo\".");
+}
+
+if ("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register(RAIZ_SITE + "sw.js", {scope: RAIZ_SITE})
+      .catch(() => {});   // file:// e http não registram — a página funciona igual
+  });
+}
+</script></body></html>
