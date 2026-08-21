@@ -8,6 +8,7 @@ from __future__ import annotations
 import html
 import json
 import re
+import unicodedata
 from pathlib import Path
 
 # as mesmas quatro cores de método do aplicativo (--m1 a --m4)
@@ -22,6 +23,13 @@ def sem_tags(s):
 
 def e(s):
     return html.escape(str(s if s is not None else ""), quote=True)
+
+
+def _slug(s):
+    """Pedaço de nome de arquivo: sem acento, sem espaço, sem caractere proibido."""
+    s = unicodedata.normalize("NFD", str(s or ""))
+    s = "".join(c for c in s if unicodedata.category(c) != "Mn")
+    return re.sub(r"[^A-Za-z0-9]+", "", s) or "Time"
 
 
 def brl(v):
@@ -81,6 +89,33 @@ button{font:inherit;cursor:pointer}
   padding:8px 13px;font-size:13px;font-weight:500;color:var(--tx);text-decoration:none;transition:.12s;
   display:inline-flex;align-items:center;gap:7px}
 .acoes button:hover,.acoes a:hover{border-color:#3A4756;background:#212a35}
+.acoes .spacer{flex:1}
+.banca{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--tx3)}
+.banca .inp{width:110px;text-align:right;font-size:14px;font-weight:650;color:var(--tx);
+  letter-spacing:0;text-transform:none;font-variant-numeric:tabular-nums}
+.banca .btn-lim{background:transparent;border:1px solid var(--line);color:var(--tx3);
+  border-radius:7px;padding:6px 9px;font-size:13px;line-height:1;transition:.12s}
+.banca .btn-lim:hover{color:var(--tx);border-color:#3A4756}
+
+/* ---------- filtros ---------- */
+.filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.chip{background:var(--panel);border:1px solid var(--line);color:var(--tx2);border-radius:20px;
+  padding:6px 13px;font-size:12.5px;font-weight:500;transition:.12s;display:inline-flex;align-items:center;gap:7px}
+.chip:hover{color:var(--tx);border-color:#3A4756}
+.chip[aria-pressed="true"]{background:var(--panel2);color:var(--tx);border-color:#48566A}
+.chip .sw{width:8px;height:8px;border-radius:2px;flex:none}
+.chip .ct{font-size:10.5px;color:var(--tx3);font-weight:700}
+.chip.lim{color:var(--tx3)}
+.inp{background:var(--panel);border:1px solid var(--line);color:var(--tx);border-radius:8px;
+  padding:7px 11px;font:inherit;font-size:12.5px}
+.inp:focus{outline:0;border-color:var(--m1)}
+select.inp{cursor:pointer}
+.filtros .spacer{flex:1}
+.filtros .conta{color:var(--tx3);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.jogo.fora{display:none}
+.vazio{text-align:center;padding:44px 20px;color:var(--tx3);font-size:13px;
+  border:1px dashed var(--line);border-radius:12px}
 
 /* ---------- grade de quadros ---------- */
 .grade{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:stretch}
@@ -119,8 +154,12 @@ details[open] .c-jogo .t b{-webkit-line-clamp:none}
 .badge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;padding:3px 8px;border-radius:20px;white-space:nowrap}
 .badge.live{background:rgba(239,95,95,.12);color:#F58A8A;border:1px solid rgba(239,95,95,.3)}
 .badge.pre{background:rgba(76,126,243,.12);color:#8FB0F7;border:1px solid rgba(76,126,243,.3)}
-.c-abre{text-align:center;color:var(--tx3);font-size:11.5px;border-top:1px solid var(--line);padding-top:6px}
-.c-abre .chev{display:inline-block;margin-left:4px;transition:transform .15s}
+.c-abre{color:var(--tx3);font-size:11.5px;border-top:1px solid var(--line);padding-top:6px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px}
+.c-abre .chev{display:inline-block;margin-left:2px;transition:transform .15s}
+.c-img{background:transparent;border:1px solid var(--line);color:var(--tx2);border-radius:6px;
+  padding:3px 9px;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;transition:.12s}
+.c-img:hover{color:var(--tx);border-color:#3A4756;background:var(--panel2)}
 details[open] .c-abre{border:0;padding:0;margin-left:auto}
 details[open] .c-abre .chev{transform:rotate(180deg)}
 details[open] .c-vals{border:0;padding:0;display:flex;gap:22px}
@@ -174,7 +213,7 @@ tr.dentro td.barra i{background:var(--m3)}
 @media (max-width:640px){ .grade{grid-template-columns:1fr} .jogo:not([open]) .cap{aspect-ratio:auto} }
 @media print{
   body{background:#fff;color:#000}
-  .topbar,.acoes{display:none!important}
+  .topbar,.acoes,.filtros,.c-img{display:none!important}
   .pg{padding:0}
   .grade{display:block}
   .jogo{border-color:#ccc;background:#fff;margin-bottom:10px}
@@ -183,6 +222,341 @@ tr.dentro td.barra i{background:var(--m3)}
   .bl b,.dia b{color:#000}
 }
 """
+
+
+# o botão "Imagem" desenha o quadro num canvas e baixa um PNG quadrado, do
+# tamanho certo para mandar no grupo. Sem biblioteca: os escudos já estão na
+# página como data: URI, então o canvas não fica "sujo" e o toBlob funciona.
+JS_IMAGEM = r"""
+const CORES_IMG = {bg:"#151A21", pan:"#1B222B", line:"#28313D",
+                   tx:"#E7ECF3", tx2:"#94A1B2", tx3:"#66707E"};
+const FONTE = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+
+function _linhas(ctx, texto, largura, max){
+  const palavras = String(texto || "").split(/\s+/).filter(Boolean);
+  const saida = [];
+  let linha = "", sobrou = false;
+  for (let i = 0; i < palavras.length; i++){
+    const teste = linha ? linha + " " + palavras[i] : palavras[i];
+    if (ctx.measureText(teste).width > largura && linha){
+      if (saida.length === max - 1){ sobrou = true; break; }   // não cabe mais linha
+      saida.push(linha); linha = palavras[i];
+    } else {
+      linha = teste;
+    }
+  }
+  if (linha) saida.push(linha);
+  // texto cortado sempre termina em reticências, senão a frase mente por omissão
+  if (sobrou && saida.length){
+    let corte = saida[saida.length-1];
+    while (corte.length > 4 && ctx.measureText(corte + "…").width > largura) corte = corte.slice(0,-1);
+    saida[saida.length-1] = corte.replace(/[ ,;:]+$/, "") + "…";
+  }
+  return saida;
+}
+
+function _imagem(src){
+  return new Promise(ok => {
+    if (!src) return ok(null);
+    const im = new Image();
+    im.onload = () => ok(im);
+    im.onerror = () => ok(null);
+    im.src = src;
+  });
+}
+
+async function montarImagem(card){
+  const d = JSON.parse(card.dataset.img);
+  const escudos = [...card.querySelectorAll("img.esc")].map(i => i.src);
+  const [ec, ef] = await Promise.all([_imagem(escudos[0]), _imagem(escudos[1])]);
+
+  const S = 1080, P = 66;
+  const cv = document.createElement("canvas");
+  cv.width = S; cv.height = S;
+  const c = cv.getContext("2d");
+
+  c.fillStyle = CORES_IMG.bg; c.fillRect(0,0,S,S);
+  c.fillStyle = d.cor;        c.fillRect(0,0,S,9);
+
+  // cabeçalho
+  c.textBaseline = "alphabetic";
+  c.font = `700 21px ${FONTE}`; c.fillStyle = CORES_IMG.tx3;
+  c.fillText("MESA DE ANÁLISE", P, 74);
+  c.textAlign = "right"; c.fillText(String(d.data || "").toUpperCase(), S-P, 74);
+  c.textAlign = "left";
+
+  // hora + etiqueta
+  c.font = `700 52px ${FONTE}`; c.fillStyle = CORES_IMG.tx;
+  c.fillText(d.hora || "", P, 168);
+  const larguraHora = c.measureText(d.hora || "").width;
+  const et = d.live ? d.etiqueta : "PRÉ-LIVE";
+  c.font = `800 22px ${FONTE}`;
+  const larguraEt = c.measureText(et).width;
+  const exBg = d.live ? "rgba(239,95,95,.14)" : "rgba(76,126,243,.14)";
+  const exTx = d.live ? "#F58A8A" : "#8FB0F7";
+  c.fillStyle = exBg;
+  c.beginPath(); c.roundRect(P + larguraHora + 22, 138, larguraEt + 34, 40, 20); c.fill();
+  c.fillStyle = exTx; c.fillText(et, P + larguraHora + 39, 165);
+
+  // times
+  let y = 250;
+  for (const [nome, im] of [[d.casa, ec], [d.fora, ef]]){
+    if (im){ c.drawImage(im, P, y-42, 54, 54); }
+    else {
+      c.fillStyle = CORES_IMG.pan;
+      c.beginPath(); c.arc(P+27, y-15, 27, 0, 7); c.fill();
+      c.fillStyle = CORES_IMG.tx3; c.font = `800 24px ${FONTE}`;
+      c.textAlign = "center"; c.fillText((nome||"?")[0].toUpperCase(), P+27, y-6); c.textAlign = "left";
+    }
+    c.fillStyle = CORES_IMG.tx; c.font = `650 42px ${FONTE}`;
+    c.fillText(_linhas(c, nome, S - P*2 - 80, 1)[0] || "", P + 76, y);
+    y += 76;
+  }
+  c.fillStyle = CORES_IMG.tx3; c.font = `400 25px ${FONTE}`;
+  c.fillText(d.liga || "", P, y - 4);
+
+  // divisória
+  y += 34;
+  c.fillStyle = CORES_IMG.line; c.fillRect(P, y, S - P*2, 1);
+
+  // método e mercado
+  y += 56;
+  c.fillStyle = d.cor; c.font = `800 24px ${FONTE}`;
+  c.fillText(String(d.metodo || "").toUpperCase(), P, y);
+  y += 48;
+  c.fillStyle = CORES_IMG.tx; c.font = `600 36px ${FONTE}`;
+  for (const l of _linhas(c, d.mercado, S - P*2, 2)){ c.fillText(l, P, y); y += 44; }
+
+  // motivo
+  y += 14;
+  c.fillStyle = CORES_IMG.tx2; c.font = `400 27px ${FONTE}`;
+  for (const l of _linhas(c, d.motivo, S - P*2, 4)){ c.fillText(l, P, y); y += 38; }
+
+  // números, ancorados embaixo
+  const cx = S - P*2, bh = 132, by = S - P - bh - 46;
+
+  // o espaço que sobrar entre o motivo e os números vira leitura ao vivo:
+  // quantas linhas couberem, sem nunca invadir os números
+  const sobra = by - 34 - y;
+  const MINIMO = 20 + 34 + 34;          // respiro + rótulo + uma linha de texto
+  if (d.seguir && sobra >= MINIMO){
+    y += 20;
+    c.fillStyle = "#34C48A"; c.font = `700 21px ${FONTE}`;
+    c.fillText("SEGUIR SE", P, y);
+    y += 34;
+    const cabem = Math.max(1, Math.min(4, Math.floor((by - 34 - y) / 34)));
+    c.fillStyle = CORES_IMG.tx2; c.font = `400 25px ${FONTE}`;
+    for (const l of _linhas(c, d.seguir, S - P*2, cabem)){ c.fillText(l, P, y); y += 34; }
+  }
+  c.fillStyle = CORES_IMG.pan;
+  c.beginPath(); c.roundRect(P, by, cx/2 - 7, bh, 12); c.fill();
+  c.beginPath(); c.roundRect(P + cx/2 + 7, by, cx/2 - 7, bh, 12); c.fill();
+
+  const bloco = (x, rot, val, sub) => {
+    c.fillStyle = CORES_IMG.tx3; c.font = `700 21px ${FONTE}`;
+    c.fillText(rot.toUpperCase(), x + 26, by + 44);
+    c.fillStyle = CORES_IMG.tx;  c.font = `650 46px ${FONTE}`;
+    c.fillText(val, x + 26, by + 100);
+    if (sub){
+      const w = c.measureText(val).width;
+      c.fillStyle = CORES_IMG.tx2; c.font = `600 26px ${FONTE}`;
+      c.fillText(sub, x + 26 + w + 14, by + 100);
+    }
+  };
+  bloco(P, d.rotOdd, d.odd);
+  // a imagem sai com a banca que está na tela agora, não com a do arquivo
+  const reais = (typeof BANCA === "number" && d.stakeNum != null)
+    ? "· " + brlJS(d.stakeNum / 100 * BANCA) : d.reais;
+  bloco(P + cx/2 + 7, "stake", d.stake, reais);
+
+  c.fillStyle = CORES_IMG.tx3; c.font = `400 21px ${FONTE}`;
+  c.fillText(d.rodape || "", P, S - P + 8);
+  return cv;
+}
+
+async function baixarImagem(botao, ev){
+  ev.preventDefault(); ev.stopPropagation();
+  const card = botao.closest("details.jogo");
+  const rotulo = botao.textContent;
+  botao.textContent = "gerando…";
+  try {
+    const cv = await montarImagem(card);
+    await new Promise(ok => cv.toBlob(b => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(b);
+      a.download = card.dataset.arquivo + ".png";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      ok();
+    }, "image/png"));
+  } catch (e) {
+    alert("Não deu para gerar a imagem: " + e.message);
+  }
+  botao.textContent = rotulo;
+}
+"""
+
+
+JS_BANCA = r"""
+// A stake é uma fração da banca (Kelly), então trocar a banca muda o valor em
+// reais e NÃO muda o percentual — nem a exposição, que também é percentual.
+let BANCA = BANCA_INICIAL;
+
+function brlJS(v){
+  const p = (Math.round(v * 100) / 100).toFixed(2).split(".");
+  return "R$ " + p[0].replace(/\B(?=(\d{3})+$)/g, ".") + "," + p[1];
+}
+
+function aplicarBanca(valor, guardar){
+  const n = parseFloat(valor);
+  if (!isFinite(n) || n <= 0) return;          // campo vazio ou lixo: mantém a anterior
+  BANCA = n;
+
+  for (const c of document.querySelectorAll("details.jogo")){
+    const em = c.querySelector(".c-vals .reais");
+    if (em) em.textContent = "· " + brlJS(parseFloat(c.dataset.stake) / 100 * BANCA);
+  }
+  const kb = document.getElementById("k-banca");
+  if (kb) kb.textContent = brlJS(BANCA);
+  const kr = document.getElementById("k-risco");
+  if (kr) kr.textContent = brlJS(RISCO_PCT / 100 * BANCA);
+
+  if (guardar){
+    try { localStorage.setItem("mesa-banca", String(BANCA)); } catch (e) {}
+  }
+}
+
+function restaurarBanca(){
+  let guardada = null;
+  try { guardada = localStorage.getItem("mesa-banca"); } catch (e) {}
+  const campo = document.getElementById("f-banca");
+  if (guardada && parseFloat(guardada) > 0){
+    if (campo) campo.value = guardada;
+    aplicarBanca(guardada, false);
+  }
+}
+
+function bancaPadrao(){
+  try { localStorage.removeItem("mesa-banca"); } catch (e) {}
+  const campo = document.getElementById("f-banca");
+  if (campo) campo.value = BANCA_INICIAL;
+  aplicarBanca(BANCA_INICIAL, false);
+}
+
+document.addEventListener("DOMContentLoaded", restaurarBanca);
+"""
+
+JS_FILTROS = r"""
+const $$ = s => [...document.querySelectorAll(s)];
+
+function _ativos(grupo){
+  return $$(`.chip[data-grupo="${grupo}"][aria-pressed="true"]`).map(b => b.dataset.valor);
+}
+
+function filtrar(){
+  const metodos = _ativos("metodo");
+  const tipos   = _ativos("tipo");
+  const liga    = document.getElementById("f-liga")?.value || "";
+  const busca   = (document.getElementById("f-busca")?.value || "").trim().toLowerCase();
+  const ordem   = document.getElementById("f-ordem")?.value || "hora";
+
+  let visiveis = [];
+  for (const c of $$("details.jogo")){
+    const d = c.dataset;
+    const ok =
+      (!metodos.length || metodos.includes(d.metodo)) &&
+      (!tipos.length   || tipos.includes(d.live === "1" ? "live" : "pre")) &&
+      (!liga  || d.liga === liga) &&
+      (!busca || d.busca.includes(busca));
+    c.classList.toggle("fora", !ok);
+    if (ok) visiveis.push(c);
+  }
+
+  // a grade é CSS grid: 'order' reposiciona sem mexer no HTML
+  const chave = {
+    hora:  c => c.dataset.hora,
+    stake: c => -parseFloat(c.dataset.stake),
+    conf:  c => -parseFloat(c.dataset.conf),
+  }[ordem];
+  visiveis
+    .slice()
+    .sort((a,b) => { const x = chave(a), y = chave(b); return x < y ? -1 : x > y ? 1 : 0; })
+    .forEach((c,i) => c.style.order = i);
+
+  const total = $$("details.jogo").length;
+  const cont = document.getElementById("f-conta");
+  if (cont) cont.textContent = visiveis.length === total
+    ? `${total} entrada(s)`
+    : `${visiveis.length} de ${total}`;
+  const vazio = document.getElementById("f-vazio");
+  if (vazio) vazio.style.display = visiveis.length ? "none" : "block";
+}
+
+function alternarChip(b){
+  b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true");
+  filtrar();
+}
+
+function limparFiltros(){
+  $$(".chip").forEach(b => b.setAttribute("aria-pressed","false"));
+  const l = document.getElementById("f-liga");   if (l) l.value = "";
+  const b = document.getElementById("f-busca");  if (b) b.value = "";
+  const o = document.getElementById("f-ordem");  if (o) o.value = "hora";
+  filtrar();
+}
+
+document.addEventListener("DOMContentLoaded", filtrar);
+"""
+
+
+def _filtros(entradas):
+    """Chips de método e tipo, seletor de liga, busca e ordenação.
+
+    Sem JavaScript nada disso aparece filtrando — mas os quadros continuam
+    todos visíveis, que é o estado certo para quem só quer ler.
+    """
+    if not entradas:
+        return ""
+
+    chips = []
+    for metodo, rotulo in (("BACK_FAV", "Back Favorito"), ("LAY_ZEBRA", "Lay Zebra"),
+                           ("OVER", "Over Limite"), ("BACK22", "Back 2x2")):
+        n = sum(1 for x in entradas if x["principal"]["metodo"] == metodo)
+        if not n:
+            continue
+        chips.append(
+            f'<button class="chip" data-grupo="metodo" data-valor="{metodo}" aria-pressed="false" '
+            f'onclick="alternarChip(this)"><i class="sw" style="background:{CORES[metodo]}"></i>'
+            f'{rotulo}<span class="ct">{n}</span></button>')
+
+    for valor, rotulo in (("live", "Ao vivo"), ("pre", "Pré-live")):
+        n = sum(1 for x in entradas if bool(x.get("aoVivo")) == (valor == "live"))
+        if not n:
+            continue
+        chips.append(
+            f'<button class="chip" data-grupo="tipo" data-valor="{valor}" aria-pressed="false" '
+            f'onclick="alternarChip(this)">{rotulo}<span class="ct">{n}</span></button>')
+
+    ligas = sorted({x.get("liga") for x in entradas if x.get("liga") and x["liga"] != "—"})
+    sel_liga = ""
+    if len(ligas) > 1:
+        opcoes = "".join(f'<option value="{e(l)}">{e(l)}</option>' for l in ligas)
+        sel_liga = (f'<select class="inp" id="f-liga" onchange="filtrar()">'
+                    f'<option value="">Todas as ligas</option>{opcoes}</select>')
+
+    return f"""<div class="filtros">
+  {"".join(chips)}
+  {sel_liga}
+  <input class="inp" id="f-busca" type="search" placeholder="Buscar time…" oninput="filtrar()">
+  <select class="inp" id="f-ordem" onchange="filtrar()">
+    <option value="hora">Por horário</option>
+    <option value="stake">Maior stake</option>
+    <option value="conf">Maior confiança</option>
+  </select>
+  <button class="chip lim" onclick="limparFiltros()">Limpar</button>
+  <span class="spacer"></span>
+  <span class="conta" id="f-conta">{len(entradas)} entrada(s)</span>
+</div>"""
 
 
 def _topo(titulo, sub=""):
@@ -199,7 +573,7 @@ def _bloco(rot, conteudo, largo=False):
     return f'<section class="{cls}"><h4>{rot}</h4><div>{conteudo}</div></section>'
 
 
-def _card(ent, cfg):
+def _card(ent, cfg, data_rot=""):
     p = ent["principal"]
     cor = CORES.get(p["metodo"], "#6B7280")
     live = bool(ent.get("aoVivo"))
@@ -234,9 +608,13 @@ def _card(ent, cfg):
         </div>
         <div class="c-vals">
           <div><span>{rot_odd}</span><b>{f2(p["oddRec"])}</b></div>
-          <div><span>stake</span><b>{f2(p["stake"])}% <em>· {brl(p["stake"]/100*banca)}</em></b></div>
+          <div><span>stake</span><b>{f2(p["stake"])}% <em class="reais">· {brl(p["stake"]/100*banca)}</em></b></div>
         </div>
-        <div class="c-abre"><span>Detalhes</span><span class="chev">▾</span></div>
+        <div class="c-abre">
+          <span class="det">Detalhes <span class="chev">▾</span></span>
+          <button type="button" class="c-img" onclick="baixarImagem(this,event)"
+                  title="Baixar este quadro como imagem">Imagem</button>
+        </div>
       </div>"""
 
     if p["status"] == "AGUARDAR":
@@ -335,7 +713,44 @@ def _card(ent, cfg):
              + _bloco("Outros métodos aprovados", e(outros))
              + (f'<div class="notas">{"<br>".join(notas)}</div>' if notas else ""))
 
-    return (f'<details class="jogo" style="--c:{cor}"><summary>{capa}</summary>'
+    # tudo que a imagem precisa. Os escudos não entram aqui: já estão na página
+    # como data: URI e o desenho lê direto do <img>, sem duplicar 13 KB por card.
+    dados_img = {
+        "data": data_rot,
+        "hora": ent.get("hora") or "",
+        "etiqueta": tipo_txt,
+        "live": live,
+        "casa": ent["casa"], "fora": ent["fora"],
+        "liga": ent.get("liga") or "",
+        "cor": cor,
+        "metodo": p["nome"],
+        "mercado": p["mercado"],
+        "motivo": sem_tags(ent.get("motivoBase") or ent.get("motivoCurto") or ""),
+        "seguir": sem_tags(ent.get("seguir") or ""),
+        "rotOdd": rot_odd,
+        "odd": f2(p["oddRec"]),
+        "stake": f'{f2(p["stake"])}%',
+        "reais": f'· {brl(p["stake"]/100*banca)}',
+        "stakeNum": round(p["stake"], 4),
+        "rodape": "Odd mínima em back, máxima em lay.",
+    }
+    arquivo = "_".join(x for x in [
+        (data_rot or "").replace("/", "-"),
+        (ent.get("hora") or "").replace(":", "h"),
+        _slug(ent["casa"]), "x", _slug(ent["fora"])] if x)
+
+    return (f'<details class="jogo" style="--c:{cor}"'
+            f" data-img='{e(json.dumps(dados_img, ensure_ascii=False))}'"
+            f' data-arquivo="{e(arquivo)}"'
+            f' data-metodo="{e(p["metodo"])}"'
+            f' data-live="{"1" if live else "0"}"'
+            f' data-status="{e(p["status"])}"'
+            f' data-liga="{e(ent.get("liga") or "")}"'
+            f' data-hora="{e(ent.get("hora") or "99:99")}"'
+            f' data-stake="{p["stake"]:.4f}"'
+            f' data-conf="{ent.get("confianca") or 0}"'
+            f' data-busca="{e((ent["casa"] + " " + ent["fora"] + " " + (ent.get("liga") or "")).lower())}">'
+            f'<summary>{capa}</summary>'
             f'<div class="corpo">{corpo}</div></details>')
 
 
@@ -346,33 +761,48 @@ def pagina_do_dia(analise, data, voltar="../index.html"):
     risco = analise["resumo"].get("exposicaoRiscoPct", 0)
     ligas = sorted({x.get("liga") for x in entradas if x.get("liga") and x["liga"] != "—"})
 
-    cards = "".join(_card(x, cfg) for x in entradas)
+    cards = "".join(_card(x, cfg, data) for x in entradas)
     return f"""<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Relatório — {e(data)}</title><style>{CSS}</style></head><body>
 {_topo(data, f"Relatório do dia · {data}")}
 <div class="pg">
 <div class="sub">{len(entradas)} entrada(s) selecionada(s) de {len(entradas)+len(analise["descartes"])} jogo(s) analisado(s) ·
-banca de {brl(banca)} · comissão {cfg["geral"]["comissao"]}%
+banca de <b id="k-banca">{brl(banca)}</b> · comissão {cfg["geral"]["comissao"]}%
 {("<br>Ligas: " + e(" · ".join(ligas))) if ligas else ""}</div>
 <div class="resumo">
   <div><span>Entradas</span><b>{len(entradas)}</b></div>
   <div><span>Ao vivo</span><b>{sum(1 for x in entradas if x.get("aoVivo"))}</b></div>
   <div><span>Exposição</span><b>{risco:.1f}%</b></div>
-  <div><span>Em risco</span><b>{brl(risco/100*banca)}</b></div>
+  <div><span>Em risco</span><b id="k-risco">{brl(risco/100*banca)}</b></div>
   <div><span>Com valor agora</span><b>{sum(1 for x in entradas if x["principal"]["status"]=="VALOR")}</b></div>
   <div><span>Fora dos critérios</span><b>{len(analise["descartes"])}</b></div>
 </div>
 <div class="acoes">
   <a href="{voltar}">← Todos os dias</a>
-  <button onclick="document.querySelectorAll('details').forEach(d=>d.open=true)">Expandir todos</button>
-  <button onclick="document.querySelectorAll('details').forEach(d=>d.open=false)">Recolher todos</button>
+  <button onclick="document.querySelectorAll('details.jogo:not(.fora)').forEach(d=>d.open=true)">Expandir todos</button>
+  <button onclick="document.querySelectorAll('details.jogo').forEach(d=>d.open=false)">Recolher todos</button>
   <button onclick="window.print()">Imprimir</button>
+  <span class="spacer"></span>
+  <label class="banca">Banca
+    <input class="inp" id="f-banca" type="number" min="1" step="50" value="{banca:.0f}"
+           oninput="aplicarBanca(this.value, true)">
+    <button class="btn-lim" onclick="bancaPadrao()"
+            title="Voltar para a banca de criterios.json">↺</button>
+  </label>
 </div>
+{_filtros(entradas)}
 {f'<div class="grade">{cards}</div>' if cards else "<p>Nenhuma entrada aprovada neste dia.</p>"}
+<div class="vazio" id="f-vazio" style="display:none">Nenhum quadro com esses filtros.
+<a href="#" onclick="limparFiltros();return false">Limpar</a>.</div>
 <div class="rodape">Odd recomendada é o preço a partir do qual a entrada tem a margem exigida —
-mínima em back, máxima em lay. Gerado automaticamente a partir dos PDFs do dia.</div>
-</div></body></html>"""
+mínima em back, máxima em lay. O botão <b>Imagem</b> em cada quadro baixa um PNG quadrado, pronto
+para mandar no grupo. Trocar a <b>banca</b> no topo recalcula os valores em reais na hora — a stake
+em % não muda, porque ela já é uma fração da banca. Gerado automaticamente a partir dos PDFs do dia.</div>
+</div><script>
+const BANCA_INICIAL = {banca:.2f};
+const RISCO_PCT = {risco:.4f};
+{JS_BANCA}{JS_IMAGEM}{JS_FILTROS}</script></body></html>"""
 
 
 def pagina_indice(dias, titulo="Mesa de Análise"):

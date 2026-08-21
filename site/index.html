@@ -43,6 +43,33 @@ button{font:inherit;cursor:pointer}
   padding:8px 13px;font-size:13px;font-weight:500;color:var(--tx);text-decoration:none;transition:.12s;
   display:inline-flex;align-items:center;gap:7px}
 .acoes button:hover,.acoes a:hover{border-color:#3A4756;background:#212a35}
+.acoes .spacer{flex:1}
+.banca{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--tx3)}
+.banca .inp{width:110px;text-align:right;font-size:14px;font-weight:650;color:var(--tx);
+  letter-spacing:0;text-transform:none;font-variant-numeric:tabular-nums}
+.banca .btn-lim{background:transparent;border:1px solid var(--line);color:var(--tx3);
+  border-radius:7px;padding:6px 9px;font-size:13px;line-height:1;transition:.12s}
+.banca .btn-lim:hover{color:var(--tx);border-color:#3A4756}
+
+/* ---------- filtros ---------- */
+.filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.chip{background:var(--panel);border:1px solid var(--line);color:var(--tx2);border-radius:20px;
+  padding:6px 13px;font-size:12.5px;font-weight:500;transition:.12s;display:inline-flex;align-items:center;gap:7px}
+.chip:hover{color:var(--tx);border-color:#3A4756}
+.chip[aria-pressed="true"]{background:var(--panel2);color:var(--tx);border-color:#48566A}
+.chip .sw{width:8px;height:8px;border-radius:2px;flex:none}
+.chip .ct{font-size:10.5px;color:var(--tx3);font-weight:700}
+.chip.lim{color:var(--tx3)}
+.inp{background:var(--panel);border:1px solid var(--line);color:var(--tx);border-radius:8px;
+  padding:7px 11px;font:inherit;font-size:12.5px}
+.inp:focus{outline:0;border-color:var(--m1)}
+select.inp{cursor:pointer}
+.filtros .spacer{flex:1}
+.filtros .conta{color:var(--tx3);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.jogo.fora{display:none}
+.vazio{text-align:center;padding:44px 20px;color:var(--tx3);font-size:13px;
+  border:1px dashed var(--line);border-radius:12px}
 
 /* ---------- grade de quadros ---------- */
 .grade{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:stretch}
@@ -81,8 +108,12 @@ details[open] .c-jogo .t b{-webkit-line-clamp:none}
 .badge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;padding:3px 8px;border-radius:20px;white-space:nowrap}
 .badge.live{background:rgba(239,95,95,.12);color:#F58A8A;border:1px solid rgba(239,95,95,.3)}
 .badge.pre{background:rgba(76,126,243,.12);color:#8FB0F7;border:1px solid rgba(76,126,243,.3)}
-.c-abre{text-align:center;color:var(--tx3);font-size:11.5px;border-top:1px solid var(--line);padding-top:6px}
-.c-abre .chev{display:inline-block;margin-left:4px;transition:transform .15s}
+.c-abre{color:var(--tx3);font-size:11.5px;border-top:1px solid var(--line);padding-top:6px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px}
+.c-abre .chev{display:inline-block;margin-left:2px;transition:transform .15s}
+.c-img{background:transparent;border:1px solid var(--line);color:var(--tx2);border-radius:6px;
+  padding:3px 9px;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;transition:.12s}
+.c-img:hover{color:var(--tx);border-color:#3A4756;background:var(--panel2)}
 details[open] .c-abre{border:0;padding:0;margin-left:auto}
 details[open] .c-abre .chev{transform:rotate(180deg)}
 details[open] .c-vals{border:0;padding:0;display:flex;gap:22px}
@@ -136,7 +167,7 @@ tr.dentro td.barra i{background:var(--m3)}
 @media (max-width:640px){ .grade{grid-template-columns:1fr} .jogo:not([open]) .cap{aspect-ratio:auto} }
 @media print{
   body{background:#fff;color:#000}
-  .topbar,.acoes{display:none!important}
+  .topbar,.acoes,.filtros,.c-img{display:none!important}
   .pg{padding:0}
   .grade{display:block}
   .jogo{border-color:#ccc;background:#fff;margin-bottom:10px}
@@ -149,7 +180,7 @@ tr.dentro td.barra i{background:var(--m3)}
 <div class="pg">
 <div class="sub">Do mais recente para o mais antigo.</div>
 <div class="acoes"><a href="app.html">Abrir o aplicativo →</a></div>
-<div class="dias"><a class="dia" href="2026-08-21/index.html"><b>2026-08-21</b><span>12 entrada(s) · 6 descartado(s)</span></a><a class="dia" href="2026-08-20/index.html"><b>2026-08-20</b><span>5 entrada(s) · 5 descartado(s)</span></a></div>
+<div class="dias"><a class="dia" href="2026-08-21/index.html"><b>2026-08-21</b><span>12 entrada(s) · 6 descartado(s)</span></a></div>
 <div class="rodape">Cada página traz os quadros do dia: partida, mercado sugerido, motivo e
 leitura ao vivo. Clique em um quadro para abrir o detalhe.</div>
 </div></body></html>
