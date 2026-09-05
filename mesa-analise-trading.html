@@ -659,45 +659,93 @@ function evLay(p, odd, com){ return (1-p)*(1-com) - p*(odd-1); }
 /* ============================================================
    2. LEITURA DE PDF  →  TEXTO POSICIONAL
    ============================================================ */
+/* OCR sob demanda para PDFs compostos por imagens.
+   O pdf.js continua sendo a primeira opção. O OCR só é acionado quando não há
+   uma camada de texto suficiente. */
+let OCR_READY = null;
+async function carregarOCR(){
+  if (window.Tesseract) return window.Tesseract;
+  if (!OCR_READY){
+    OCR_READY = new Promise((resolve,reject)=>{
+      const sc=document.createElement('script');
+      sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      sc.onload=()=>resolve(window.Tesseract);
+      sc.onerror=()=>reject(new Error('Não foi possível carregar o OCR. Conecte-se à internet na primeira leitura ou use um PDF com texto pesquisável.'));
+      document.head.appendChild(sc);
+    });
+  }
+  return OCR_READY;
+}
+function normalizarTextoOCR(txt){
+  return String(txt||'').replace(/[\uE000-\uF8FF\uFFFD]/g,' ')
+    .replace(/[|¦]/g,' ').replace(/[–—]/g,'-')
+    .replace(/\bO(?=\.\d{2}\b)/g,'0').replace(/(?<=\d),(?=\d{2}\b)/g,'.')
+    .replace(/[ \t]+/g,' ').replace(/ *\n */g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+async function ocrPdf(doc){
+  const T = await carregarOCR();
+  const paginas=[];
+  let worker;
+  try{
+    worker = await T.createWorker('por+eng', 1, {logger:m=>{
+      if (m.status==='recognizing text' && typeof m.progress==='number'){
+        const pct=Math.round(m.progress*100);
+        if (typeof logar==='function' && [25,50,75,100].includes(pct)) logar(`OCR: ${pct}% da página em processamento.`, 'ok');
+      }
+    }});
+    for(let p=1;p<=doc.numPages;p++){
+      const page=await doc.getPage(p);
+      const viewport=page.getViewport({scale:1.65});
+      const canvas=document.createElement('canvas');
+      canvas.width=Math.ceil(viewport.width); canvas.height=Math.ceil(viewport.height);
+      const ctx=canvas.getContext('2d',{alpha:false});
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      await page.render({canvasContext:ctx,viewport}).promise;
+      if (typeof logar==='function') logar(`OCR: lendo página ${p} de ${doc.numPages}...`, 'ok');
+      const r=await worker.recognize(canvas);
+      paginas.push(normalizarTextoOCR(r?.data?.text||''));
+      canvas.width=1; canvas.height=1;
+    }
+  } finally { if(worker) await worker.terminate(); }
+  return paginas.join('\n\n──── PÁGINA ────\n\n');
+}
 async function pdfParaTexto(arrayBuffer, guardarDoc){
   await window.PDFJS_READY;
   const doc = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
   if (guardarDoc) S._ultimoDoc = doc;
   const paginas = [];
+  let caracteres=0;
   for (let p=1; p<=doc.numPages; p++){
     const page = await doc.getPage(p);
     const tc   = await page.getTextContent();
     const linhas = new Map();
     tc.items.forEach(it=>{
       if (!it.str || !it.str.trim()) return;
-      const y = Math.round(it.transform[5] / 2.2);   // tolerância vertical
-      const x = it.transform[4];
+      caracteres += it.str.trim().length;
+      const y = Math.round(it.transform[5] / 2.2), x = it.transform[4];
       if (!linhas.has(y)) linhas.set(y, []);
       linhas.get(y).push({x, s: it.str, w: it.width||0});
     });
     const ord = Array.from(linhas.entries()).sort((a,b)=>b[0]-a[0]);
     const txt = ord.map(([,itens])=>{
       itens.sort((a,b)=>a.x-b.x);
-      let out = '', prev = null, prevW = 5;
+      let out='', prev=null, prevW=5;
       itens.forEach(it=>{
-        // largura média de caractere deste fragmento, para calibrar o espaçamento
-        const cw = (it.w && it.s.length) ? it.w/it.s.length : prevW;
-        if (prev !== null){
-          const gap = it.x - prev;
-          if (gap > 1.6*prevW) out += '  ';        // troca de coluna
-          else if (gap > 0.22*prevW) out += ' ';   // espaço entre palavras
-        }
-        out += it.s;
-        prev = it.x + (it.w||0);
-        prevW = cw;
+        const cw=(it.w&&it.s.length)?it.w/it.s.length:prevW;
+        if(prev!==null){ const gap=it.x-prev; if(gap>1.6*prevW) out+='  '; else if(gap>0.22*prevW) out+=' '; }
+        out+=it.s; prev=it.x+(it.w||0); prevW=cw;
       });
-      // ícones da fonte do site ocupam a área privada do Unicode e colam no início
-      // das linhas de tabela — viram espaço para não atrapalhar as expressões
       return out.replace(/[\uE000-\uF8FF\uFFFD]/g,' ').replace(/[ ]{3,}/g,'  ').replace(/\s+$/,'').trim();
     }).filter(Boolean).join('\n');
     paginas.push(txt);
   }
-  return paginas.join('\n\n──── PÁGINA ────\n\n');
+  const texto=paginas.join('\n\n──── PÁGINA ────\n\n');
+  const minimo=Math.max(120,doc.numPages*18);
+  if(caracteres<minimo){
+    if(typeof logar==='function') logar(`PDF sem camada de texto (${caracteres} caracteres). OCR automático ativado.`, 'wr');
+    return await ocrPdf(doc);
+  }
+  return texto;
 }
 
 /* ============================================================
@@ -1120,6 +1168,7 @@ function ehRelatorioPartida(txt){
   if (/Geral\s+Odds\s+H2H/i.test(txt)) s++;
   if (/Tend[êe]ncias/i.test(txt)) s++;
   if (/Aproveitamento/i.test(txt) && /Pontos\s+por\s+Jogo/i.test(txt)) s++;
+  if (/\bOdds\b/i.test(txt) && /\b(Resultado|Gols|Aproveitamento)\b/i.test(txt)) s++;
   return s >= 2;
 }
 
@@ -1401,8 +1450,8 @@ function analisarRelatorio(texto, arquivo){
   const mHora = texto.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
   j.hora = mArqH ? `${mArqH[1].padStart(2,'0')}:${mArqH[2]}`
          : (mHora ? `${mHora[1].padStart(2,'0')}:${mHora[2]}` : '--:--');
-  const mData = texto.match(/\b(\d{2}\/\d{2})\s*-\s*[A-Za-zÀ-ÿ]/);
-  if (mData) j.data = mData[1];
+  const mData = texto.match(/\b(\d{2}\/\d{2}(?:\/\d{2,4})?)\b/) || texto.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+  if (mData) j.data = mData[3] ? `${mData[3]}/${mData[2]}/${mData[1]}` : mData[1];
 
   /* --- odds (aba Odds é a fonte mais confiável) --- */
   let m = texto.match(/^\s*Resultado\s{1,}(\d+[.,]\d+)\s{1,}(\d+[.,]\d+)\s{1,}(\d+[.,]\d+)\s*$/m);
@@ -2738,7 +2787,8 @@ ${cards ? `<div class="grade">${cards}</div>` : '<p>Nenhuma entrada aprovada hoj
 ${evitar?`<h3>Jogos para evitar</h3><table class="evitar"><thead><tr><th style="width:70px">Hora</th><th style="width:220px">Jogo</th><th>Motivo</th></tr></thead><tbody>${evitar}</tbody></table>`:''}
 <div class="rodape">Odd recomendada é o preço a partir do qual a entrada tem a margem exigida — mínima em back, máxima em lay.
 Gerado pela Mesa de Análise a partir dos PDFs da pasta monitorada.</div>
-</div></body></html>`;
+</div><div id="ocr-build-info" style="display:none" data-parser="pdf-text-plus-ocr-v1"></div>
+</body></html>`;
 }
 function baixarRelatorio(){
   baixar('relatorio-do-dia.html', gerarRelatorioHTML(), 'text/html;charset=utf-8');
