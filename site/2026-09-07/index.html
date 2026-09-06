@@ -1,0 +1,639 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relatório — 2026-09-07</title><link rel="manifest" href="../manifest.webmanifest"><meta name="theme-color" content="#0E1116"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Mesa"><link rel="apple-touch-icon" href="../icone-192.png"><link rel="icon" href="../icone-192.png"><style>
+:root{
+  --bg:#0E1116; --panel:#151A21; --panel2:#1B222B; --line:#28313D;
+  --tx:#E7ECF3; --tx2:#94A1B2; --tx3:#66707E;
+  --pos:#34C48A; --neg:#EF5F5F; --warn:#E0A02F;
+  --m1:#4C7EF3; --m2:#A97BF0; --m3:#25B49B; --m4:#E0A02F;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);-webkit-font-smoothing:antialiased;
+  font:14px/1.5 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+a{color:var(--m1)}
+h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-.01em}
+button{font:inherit;cursor:pointer}
+
+/* ---------- topo ---------- */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(14,17,22,.92);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1680px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px}
+.brand .marca{width:26px;height:auto;flex:none}
+.brand h1{font-size:16px;font-weight:700;letter-spacing:-.02em}
+.brand h1 em{font-style:normal;font-weight:400;color:var(--tx2);letter-spacing:.01em}
+.topbar-in .dot{width:8px;height:8px;border-radius:50%;background:var(--pos);
+  box-shadow:0 0 0 3px rgba(52,196,138,.15);flex:none}
+.brand span{color:var(--tx3);font-size:11px;display:block;font-weight:400;letter-spacing:.04em;text-transform:uppercase}
+.spacer{flex:1}
+.pg{max-width:1680px;margin:0 auto;padding:20px 20px 60px}
+.sub{color:var(--tx2);font-size:12.5px;line-height:1.55;margin-bottom:16px}
+
+/* ---------- faixa de números ---------- */
+.resumo{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px;margin-bottom:16px}
+.resumo div{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 15px}
+.resumo div span{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--tx3);font-weight:600}
+.resumo div b{font-size:25px;font-weight:650;margin-top:5px;display:block;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.resumo div:nth-child(1){border-left:2px solid var(--m1)}
+.resumo div:nth-child(2){border-left:2px solid var(--m2)}
+.resumo div:nth-child(3){border-left:2px solid var(--m3)}
+.resumo div:nth-child(4){border-left:2px solid var(--m4)}
+
+.acoes{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.acoes button,.acoes a{background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+  padding:8px 13px;font-size:13px;font-weight:500;color:var(--tx);text-decoration:none;transition:.12s;
+  display:inline-flex;align-items:center;gap:7px}
+.acoes button:hover,.acoes a:hover{border-color:#3A4756;background:#212a35}
+.acoes .spacer{flex:1}
+.banca{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--tx3)}
+.banca .inp{width:110px;text-align:right;font-size:14px;font-weight:650;color:var(--tx);
+  letter-spacing:0;text-transform:none;font-variant-numeric:tabular-nums}
+.banca .btn-lim{background:transparent;border:1px solid var(--line);color:var(--tx3);
+  border-radius:7px;padding:6px 9px;font-size:13px;line-height:1;transition:.12s}
+.banca .btn-lim:hover{color:var(--tx);border-color:#3A4756}
+
+/* ---------- filtros ---------- */
+.filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.chip{background:var(--panel);border:1px solid var(--line);color:var(--tx2);border-radius:20px;
+  padding:6px 13px;font-size:12.5px;font-weight:500;transition:.12s;display:inline-flex;align-items:center;gap:7px}
+.chip:hover{color:var(--tx);border-color:#3A4756}
+.chip[aria-pressed="true"]{background:var(--panel2);color:var(--tx);border-color:#48566A}
+.chip .sw{width:8px;height:8px;border-radius:2px;flex:none}
+.chip .ct{font-size:10.5px;color:var(--tx3);font-weight:700}
+.chip.lim{color:var(--tx3)}
+.inp{background:var(--panel);border:1px solid var(--line);color:var(--tx);border-radius:8px;
+  padding:7px 11px;font:inherit;font-size:12.5px}
+.inp:focus{outline:0;border-color:var(--m1)}
+select.inp{cursor:pointer}
+.filtros .spacer{flex:1}
+.filtros .conta{color:var(--tx3);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.jogo.fora{display:none}
+.vazio{text-align:center;padding:44px 20px;color:var(--tx3);font-size:13px;
+  border:1px dashed var(--line);border-radius:12px}
+
+/* ---------- grade de quadros ---------- */
+.grade{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:stretch}
+.jogo{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--c);
+  border-radius:12px;overflow:hidden;page-break-inside:avoid;display:flex;flex-direction:column}
+.jogo>summary{flex:1;display:flex;flex-direction:column;list-style:none;cursor:pointer}
+.jogo>summary::-webkit-details-marker{display:none}
+.jogo[open]{grid-column:1/-1}
+.cap{display:flex;flex-direction:column;gap:7px;padding:11px 13px;flex:1}
+/* o quadrado é o piso: com a motivação o card cresce, e a linha inteira acompanha */
+.jogo:not([open]) .cap{aspect-ratio:1/1;justify-content:space-between}
+.jogo[open] .cap{flex-direction:row;align-items:center;flex-wrap:wrap;gap:12px 22px;
+  border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+.cap:hover{background:rgba(255,255,255,.02)}
+.c-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.c-hora{font-variant-numeric:tabular-nums;font-weight:700;color:var(--tx2);font-size:14px}
+.c-jogo .t{display:flex;align-items:center;gap:7px;margin-bottom:3px}
+.c-jogo .t b{font-size:13.5px;font-weight:650;line-height:1.25;min-width:0;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.esc{width:22px;height:22px;object-fit:contain;flex:none;vertical-align:middle}
+.esc.vazio{width:22px;height:22px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);
+  color:var(--tx3);display:grid;place-items:center;font-size:11px;font-weight:800;flex:none}
+.c-jogo small{display:block;color:var(--tx3);font-size:11px;margin-top:4px}
+.c-motivo{margin:5px 0 0;font-size:11.5px;line-height:1.4;color:var(--tx2);
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+details[open] .c-motivo{display:none}
+details[open] .c-jogo .t b{-webkit-line-clamp:none}
+.c-merc .met{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--c)}
+.c-merc b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  font-size:12.5px;font-weight:600;line-height:1.35;margin-top:2px}
+.c-vals{border-top:1px solid var(--line);padding-top:6px}
+.c-vals div{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:3px}
+.c-vals span{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--tx3);font-weight:700}
+.c-vals b{font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.c-vals em{font-style:normal;font-size:12px;font-weight:600;color:var(--tx2)}
+.badge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.badge.live{background:rgba(239,95,95,.12);color:#F58A8A;border:1px solid rgba(239,95,95,.3)}
+.badge.pre{background:rgba(76,126,243,.12);color:#8FB0F7;border:1px solid rgba(76,126,243,.3)}
+.c-abre{color:var(--tx3);font-size:11.5px;border-top:1px solid var(--line);padding-top:6px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px}
+.c-abre .chev{display:inline-block;margin-left:2px;transition:transform .15s}
+.c-img{background:transparent;border:1px solid var(--line);color:var(--tx2);border-radius:6px;
+  padding:3px 9px;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;transition:.12s}
+.c-img:hover{color:var(--tx);border-color:#3A4756;background:var(--panel2)}
+details[open] .c-abre{border:0;padding:0;margin-left:auto}
+details[open] .c-abre .chev{transform:rotate(180deg)}
+details[open] .c-vals{border:0;padding:0;display:flex;gap:22px}
+details[open] .c-vals div{margin:0;flex-direction:column;align-items:flex-start;gap:0}
+details[open] .c-merc b{-webkit-line-clamp:none}
+
+/* ---------- detalhe aberto ---------- */
+.corpo{padding:16px;background:rgba(0,0,0,.16);
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:0 24px}
+.corpo>.alerta,.corpo>.ok,.corpo>.neutro,.corpo>.notas{grid-column:1/-1}
+.bl{padding:12px 0;border-bottom:1px solid rgba(40,49,61,.7);min-width:0}
+.bl.wide{grid-column:1/-1}
+.bl h4{margin:0 0 5px;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--tx3);font-weight:700}
+.bl>div{font-size:13px;line-height:1.6}
+.bl b{color:#fff;font-weight:650}
+.alerta{margin:0 0 10px;background:rgba(224,160,47,.07);border:1px solid rgba(224,160,47,.28);
+  color:#E9C98A;border-radius:9px;padding:10px 13px;font-size:13px}
+.alerta b{color:#FFD98A}
+.ok{margin:0 0 10px;background:rgba(52,196,138,.08);border:1px solid rgba(52,196,138,.3);
+  color:#8FE0BC;border-radius:9px;padding:10px 13px;font-size:13px}
+.neutro{margin:0 0 10px;background:var(--panel2);border:1px solid var(--line);
+  color:var(--tx2);border-radius:9px;padding:10px 13px;font-size:13px}
+.live-l{display:flex;gap:10px;margin-bottom:6px;font-size:13px}
+.live-l span{flex:none;width:92px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;padding-top:3px}
+.seguir span{color:var(--pos)}
+.descartar span{color:var(--neg)}
+.notas{margin-top:12px;background:rgba(224,160,47,.07);border:1px solid rgba(224,160,47,.25);
+  border-radius:9px;padding:11px 13px;font-size:12.5px;color:#E9C98A;line-height:1.6}
+table.mini{width:100%;border-collapse:collapse;font-size:12.5px}
+table.mini td{padding:4px 6px;border-bottom:1px solid rgba(40,49,61,.7)}
+table.mini tr:last-child td{border-bottom:0}
+table.mini td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.mini tr.dentro td{color:var(--pos);font-weight:600}
+td.barra{width:45%}
+td.barra i{display:block;height:5px;border-radius:3px;background:#2C3541}
+tr.dentro td.barra i{background:var(--m3)}
+.mono{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:12px}
+.mut{color:var(--tx3)}
+.rodape{margin-top:24px;color:var(--tx3);font-size:12px;line-height:1.6}
+
+/* ---------- advertências ---------- */
+.legal{margin-top:18px;border:1px solid var(--line);border-left:3px solid var(--warn);
+  border-radius:var(--r);background:rgba(224,160,47,.05);padding:14px 16px}
+.legal-forte{font-size:13.5px;font-weight:700;color:#E9C98A;letter-spacing:.01em}
+.legal-linha{margin-top:7px;font-size:12.5px;color:var(--tx2);display:flex;align-items:center;
+  gap:9px;flex-wrap:wrap}
+.legal .idade{display:inline-grid;place-items:center;min-width:34px;height:24px;padding:0 7px;
+  border-radius:6px;background:#B3261E;color:#fff;font-size:12px;font-weight:800;letter-spacing:.02em}
+.legal-nota{margin-top:9px;font-size:11.5px;line-height:1.65;color:var(--tx3)}
+.legal-nota a{color:var(--tx2);text-decoration:underline}
+
+/* ---------- índice de dias ---------- */
+.dias{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.dia{background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--m1);
+  border-radius:var(--r);padding:15px 17px;text-decoration:none;color:inherit;display:block;transition:.12s}
+.dia:hover{border-color:#3A4756;border-left-color:var(--m1);background:var(--panel2)}
+.dia b{display:block;font-size:19px;font-weight:650;margin-bottom:5px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.dia span{color:var(--tx2);font-size:12px}
+
+@media (max-width:1400px){ .grade{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@media (max-width:1000px){ .grade{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:640px){ .grade{grid-template-columns:1fr} .jogo:not([open]) .cap{aspect-ratio:auto} }
+@media print{
+  body{background:#fff;color:#000}
+  .topbar,.acoes,.filtros,.c-img{display:none!important}
+  .pg{padding:0}
+  .grade{display:block}
+  .jogo{border-color:#ccc;background:#fff;margin-bottom:10px}
+  .jogo:not([open]) .cap{aspect-ratio:auto}
+  .corpo{display:block!important;background:#fff}
+  .bl b,.dia b{color:#000}
+}
+</style></head><body>
+<div class="topbar"><div class="topbar-in"><div class="brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 29" width="30" height="29" aria-hidden="true" class="marca"><rect x="3.60" y="9.60" width="3.90" height="12.00" rx="1.33" fill="#4C7EF3"/><rect x="9.90" y="4.20" width="3.90" height="17.40" rx="1.33" fill="#A97BF0"/><rect x="16.20" y="0.00" width="3.90" height="21.60" rx="1.33" fill="#25B49B"/><rect x="22.50" y="6.60" width="3.90" height="15.00" rx="1.33" fill="#E0A02F"/><rect x="0.60" y="21.60" width="28.80" height="2.40" rx="1.20" fill="#E7ECF3"/><rect x="3.30" y="24.00" width="2.40" height="5.40" rx="1.01" fill="#E7ECF3"/><rect x="24.30" y="24.00" width="2.40" height="5.40" rx="1.01" fill="#E7ECF3"/></svg><div><h1>Mesa <em>de Análise</em></h1><span>Relatório do dia · 2026-09-07</span></div></div><div class="spacer"></div><i class="dot" title="no ar"></i></div></div>
+<div class="pg">
+<div class="sub">1 entrada(s) selecionada(s) de 18 jogo(s) analisado(s) ·
+banca de <b id="k-banca">R$ 1.000,00</b> · comissão 6.5%
+<br>Ligas: Suécia_Suécia_-_Primeira_Divisão_Allsvenskan</div>
+<div class="resumo">
+  <div><span>Entradas</span><b>1</b></div>
+  <div><span>Ao vivo</span><b>1</b></div>
+  <div><span>Exposição</span><b>1.4%</b></div>
+  <div><span>Em risco</span><b id="k-risco">R$ 13,70</b></div>
+  <div><span>Com valor agora</span><b>0</b></div>
+  <div><span>Fora dos critérios</span><b>17</b></div>
+</div>
+<div class="acoes">
+  <a href="../index.html">← Todos os dias</a>
+  <button onclick="document.querySelectorAll('details.jogo:not(.fora)').forEach(d=>d.open=true)">Expandir todos</button>
+  <button onclick="document.querySelectorAll('details.jogo').forEach(d=>d.open=false)">Recolher todos</button>
+  <button onclick="window.print()">Imprimir</button>
+  <button id="b-instalar" hidden onclick="instalar()" title="Instalar como aplicativo">⤓ Instalar app</button>
+  <span class="spacer"></span>
+  <label class="banca">Banca
+    <input class="inp" id="f-banca" type="number" min="1" step="50" value="1000"
+           oninput="aplicarBanca(this.value, true)">
+    <button class="btn-lim" onclick="bancaPadrao()"
+            title="Voltar para a banca de criterios.json">↺</button>
+  </label>
+</div>
+<div class="filtros">
+  <button class="chip" data-grupo="metodo" data-valor="OVER" aria-pressed="false" onclick="alternarChip(this)"><i class="sw" style="background:#25B49B"></i>Over Limite<span class="ct">1</span></button><button class="chip" data-grupo="tipo" data-valor="live" aria-pressed="false" onclick="alternarChip(this)">Ao vivo<span class="ct">1</span></button>
+  
+  <input class="inp" id="f-busca" type="search" placeholder="Buscar time…" oninput="filtrar()">
+  <select class="inp" id="f-ordem" onchange="filtrar()">
+    <option value="hora">Por horário</option>
+    <option value="stake">Maior stake</option>
+    <option value="conf">Maior confiança</option>
+  </select>
+  <button class="chip lim" onclick="limparFiltros()">Limpar</button>
+  <span class="spacer"></span>
+  <span class="conta" id="f-conta">1 entrada(s)</span>
+</div>
+<div class="grade"><details class="jogo" style="--c:#25B49B" data-img='{&quot;data&quot;: &quot;2026-09-07&quot;, &quot;hora&quot;: &quot;14:00&quot;, &quot;etiqueta&quot;: &quot;AO VIVO 65&#x27;&quot;, &quot;live&quot;: true, &quot;casa&quot;: &quot;Mjällby&quot;, &quot;fora&quot;: &quot;IFK Göteborg&quot;, &quot;liga&quot;: &quot;Suécia_Suécia_-_Primeira_Divisão_Allsvenskan&quot;, &quot;cor&quot;: &quot;#25B49B&quot;, &quot;metodo&quot;: &quot;Over Limite&quot;, &quot;mercado&quot;: &quot;AO VIVO 65&#x27;-70&#x27; · Over (gols atuais + 0.5)&quot;, &quot;motivo&quot;: &quot;Jogo de 3.10 gols esperados, com 35% deles saindo depois do minuto 65. Chance de mais um gol na janela: 67%.&quot;, &quot;seguir&quot;: &quot;No minuto 65, o jogo precisa estar vivo: 8+ finalizações somadas, escanteios saindo, e pelo menos um dos times precisando do resultado. Substituições ofensivas já feitas são o melhor sinal.&quot;, &quot;rotOdd&quot;: &quot;odd mín.&quot;, &quot;odd&quot;: &quot;1.58&quot;, &quot;stake&quot;: &quot;1.37%&quot;, &quot;reais&quot;: &quot;· R$ 13,73&quot;, &quot;stakeNum&quot;: 1.3726, &quot;rodape&quot;: &quot;Odd mínima em back, máxima em lay.&quot;}' data-arquivo="2026-09-07_14h00_Mjallby_x_IFKGoteborg" data-metodo="OVER" data-live="1" data-status="SEM PREÇO" data-liga="Suécia_Suécia_-_Primeira_Divisão_Allsvenskan" data-hora="14:00" data-stake="1.3726" data-conf="97" data-busca="mjällby ifk göteborg suécia_suécia_-_primeira_divisão_allsvenskan"><summary>
+      <div class="cap">
+        <div class="c-top">
+          <span class="c-hora">14:00</span>
+          <span class="badge live">AO VIVO 65'</span>
+        </div>
+        <div class="c-jogo">
+          <div class="t"><img class="esc" src="data:image/png;base64,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" alt="" loading="lazy"><b>Mjällby</b></div>
+          <div class="t"><img class="esc" src="data:image/png;base64,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" alt="" loading="lazy"><b>IFK Göteborg</b></div>
+          <small>Suécia_Suécia_-_Primeira_Divisão_Allsvenskan</small>
+        </div>
+        <div class="c-merc">
+          <span class="met">Over Limite</span>
+          <b>AO VIVO 65&#x27;-70&#x27; · Over (gols atuais + 0.5)</b>
+          <p class="c-motivo">Jogo de 3.10 gols esperados, com 35% deles saindo depois do minuto 65. Chance de mais um gol na janela: 67%.</p>
+        </div>
+        <div class="c-vals">
+          <div><span>odd mín.</span><b>1.58</b></div>
+          <div><span>stake</span><b>1.37% <em class="reais">· R$ 13,73</em></b></div>
+        </div>
+        <div class="c-abre">
+          <span class="det">Detalhes <span class="chev">▾</span></span>
+          <button type="button" class="c-img" onclick="baixarImagem(this,event)"
+                  title="Baixar este quadro como imagem">Imagem</button>
+        </div>
+      </div></summary><div class="corpo"><div class="neutro">O relatório não traz preço para este mercado. Busque na exchange a partir de 1.58.</div><section class="bl wide"><h4>Motivo</h4><div>Jogo de 3.10 gols esperados, com 35% deles saindo depois do minuto 65. Chance de mais um gol na janela: 67%.</div></section><section class="bl wide"><h4>Leitura ao vivo</h4><div><div class="live-l seguir"><span>Seguir se</span>No minuto 65, o jogo precisa estar vivo: 8+ finalizações somadas, escanteios saindo, e pelo menos um dos times precisando do resultado. Substituições ofensivas já feitas são o melhor sinal.</div><div class="live-l descartar"><span>Descartar se</span>Jogo travado no gatilho: menos de 6 finalizações somadas, muito tempo perdido, faltas seguidas. Placar que serve aos dois lados. Expulsão que faz um time só administrar. Nesses casos, não monte — pule a partida.</div></div></section><section class="bl"><h4>Entrada</h4><div>Só ao vivo. Deixe o jogo correr e monte a entrada entre 65&#x27; e 70&#x27;: olhe o placar, entre em Over (gols atuais + 0.5) com odd ≥ 1.58. Confirme antes que o jogo esteja com pressão real.</div></section><section class="bl"><h4>Saída</h4><div>Green no gol seguinte — encerre a posição inteira. Stop: 85&#x27; sem gol → saia com o que restar. Nunca leve essa entrada até o apito final.</div></section><section class="bl"><h4>Mercado secundário</h4><div>Se o gol sair antes do gatilho, repetir a entrada na linha nova</div></section><section class="bl"><h4>Números do modelo</h4><div>1X2 41% / 25% / 34% · Ambas marcam 62% · Over 2.5 60% · Over 3.5 37%<br>Gols esperados <b>1.64 × 1.46</b> (total 3.10) · Placares: 1-1 <span class="mut">11%</span> · 2-1 <span class="mut">9%</span> · 1-2 <span class="mut">8%</span> · 1-0 <span class="mut">7%</span></div></section><section class="bl"><h4>Momento dos gols</h4><div><table class="mini"><tr class=""><td>0–15'</td><td class="barra"><i style="width:43%"></i></td><td class="n">17%</td><td class="n mut">0.52 gol</td></tr><tr class=""><td>16–30'</td><td class="barra"><i style="width:38%"></i></td><td class="n">15%</td><td class="n mut">0.45 gol</td></tr><tr class=""><td>31–45'</td><td class="barra"><i style="width:27%"></i></td><td class="n">10%</td><td class="n mut">0.32 gol</td></tr><tr class=""><td>46–60'</td><td class="barra"><i style="width:49%"></i></td><td class="n">19%</td><td class="n mut">0.58 gol</td></tr><tr class="dentro"><td>61–75'</td><td class="barra"><i style="width:32%"></i></td><td class="n">12%</td><td class="n mut">0.39 gol</td></tr><tr class="dentro"><td>76–90'</td><td class="barra"><i style="width:70%"></i></td><td class="n">27%</td><td class="n mut">0.84 gol</td></tr></table><small class="mut">Verde = janela após o minuto 65. Fonte: tabela MOMENTO DOS GOLS do PDF.</small></div></section><section class="bl"><h4>Histórico</h4><div><b>Mjällby</b> últimos 8: <span class="mono">0-2 0-4 0-3 0-1 4-3 0-2 0-1 1-2</span> · forma DDDDV<br><b>IFK Göteborg</b> últimos 8: <span class="mono">1-0 1-1 0-3 1-1 3-2 0-1 2-0 1-0</span> · forma VEDEV<br>Confronto direto: 4 sem derrota</div></section><section class="bl"><h4>Aproveitamento por faixa de favoritismo</h4><div>Super Favorito <b>2V 0E 1D</b> (67%) · Favorito <b>3V 2E 1D</b> (61%) · Parelho <b>2V 2E 3D</b> (38%) · Não Favorito <b>1V 2E 5D</b> (21%)<br><span class="mut">Hoje Mjällby entra como <b>Parelho</b> a 2.35.</span></div></section><section class="bl"><h4>Mercado pré-jogo</h4><div><table class="mini"><tr><td>2.35</td><td class="n">2.87</td></tr><tr><td>Resultado</td><td class="n">2.35</td><td class="n">3.50</td><td class="n">2.87</td></tr><tr><td>Resultado ao Intervalo</td><td class="n">3.00</td><td class="n">2.30</td><td class="n">3.25</td></tr><tr><td>Resultado no 2º Tempo</td><td class="n">2.62</td><td class="n">2.60</td><td class="n">2.87</td></tr><tr><td>Dupla Chance</td><td class="n">1.40</td><td class="n">1.25</td><td class="n">1.62</td></tr><tr><td>0.5 Gols</td><td class="n">1.04</td><td class="n">11.00</td></tr><tr><td>1.5 Gols</td><td class="n">1.20</td><td class="n">4.45</td></tr><tr><td>2.5 Gols</td><td class="n">1.70</td><td class="n">2.10</td></tr></table></div></section><section class="bl"><h4>Jogadores</h4><div><b>Mjällby:</b> Jacob Bergström, Abdoulie Manneh<br><b>IFK Göteborg:</b> Tobias Heintz, Sebastian Clemmensen, Sam Larsson, David Kruse</div></section></div></details></div>
+<div class="vazio" id="f-vazio" style="display:none">Nenhum quadro com esses filtros.
+<a href="#" onclick="limparFiltros();return false">Limpar</a>.</div>
+<div class="rodape">Odd recomendada é o preço a partir do qual a entrada tem a margem exigida —
+mínima em back, máxima em lay. O botão <b>Imagem</b> em cada quadro baixa um PNG quadrado, pronto
+para mandar no grupo. Trocar a <b>banca</b> no topo recalcula os valores em reais na hora — a stake
+em % não muda, porque ela já é uma fração da banca. Gerado automaticamente a partir dos PDFs do dia.</div>
+<div class="legal">
+  <div class="legal-forte">Ministério da Fazenda adverte: Apostar pode causar dependência.</div>
+  <div class="legal-linha"><span class="idade">18+</span> Proibido para menores de 18 anos · Aposta não é investimento · Jogue com responsabilidade</div>
+  <div class="legal-nota">Este site é material de análise próprio; não é convite, promessa de
+  ganho nem indicação de casa de apostas. Resultado passado não garante resultado futuro, e
+  qualquer entrada pode dar prejuízo. Se apostar deixou de ser diversão, procure ajuda:
+  <a href="https://jogadoresanonimos.com.br" target="_blank" rel="noopener">Jogadores Anônimos</a>
+  ou <a href="https://cvv.org.br" target="_blank" rel="noopener">CVV</a> (ligue 188, 24h,
+  gratuito).</div>
+</div>
+</div><script>
+const BANCA_INICIAL = 1000.00;
+const RISCO_PCT = 1.3700;
+const MARCA = "@felipebenicio09";
+const RAIZ_SITE = "../";
+const AVISO_FAZENDA = "Minist\u00e9rio da Fazenda adverte: Apostar pode causar depend\u00eancia.";
+const AVISO_APOIO = "Proibido para menores de 18 anos \u00b7 Aposta n\u00e3o \u00e9 investimento \u00b7 Jogue com responsabilidade";
+const MARCA_FORMAS = [[12.0, 32.0, 13.0, 40.0, 4.42, "#4C7EF3"], [33.0, 14.0, 13.0, 58.0, 4.42, "#A97BF0"], [54.0, 0.0, 13.0, 72.0, 4.42, "#25B49B"], [75.0, 22.0, 13.0, 50.0, 4.42, "#E0A02F"], [2.0, 72.0, 96.0, 8.0, 4.0, "#E7ECF3"], [11.0, 80.0, 8.0, 18.0, 3.36, "#E7ECF3"], [81.0, 80.0, 8.0, 18.0, 3.36, "#E7ECF3"]];
+function desenharMarca(c, x, y, lado){
+  const k = lado / 100;
+  for (const [fx, fy, fw, fh, fr, cor] of MARCA_FORMAS){
+    c.fillStyle = cor;
+    c.beginPath();
+    c.roundRect(x + fx*k, y + fy*k, fw*k, fh*k, fr*k);
+    c.fill();
+  }
+}
+
+// A stake é uma fração da banca (Kelly), então trocar a banca muda o valor em
+// reais e NÃO muda o percentual — nem a exposição, que também é percentual.
+let BANCA = BANCA_INICIAL;
+
+function brlJS(v){
+  const p = (Math.round(v * 100) / 100).toFixed(2).split(".");
+  return "R$ " + p[0].replace(/\B(?=(\d{3})+$)/g, ".") + "," + p[1];
+}
+
+function aplicarBanca(valor, guardar){
+  const n = parseFloat(valor);
+  if (!isFinite(n) || n <= 0) return;          // campo vazio ou lixo: mantém a anterior
+  BANCA = n;
+
+  for (const c of document.querySelectorAll("details.jogo")){
+    const em = c.querySelector(".c-vals .reais");
+    if (em) em.textContent = "· " + brlJS(parseFloat(c.dataset.stake) / 100 * BANCA);
+  }
+  const kb = document.getElementById("k-banca");
+  if (kb) kb.textContent = brlJS(BANCA);
+  const kr = document.getElementById("k-risco");
+  if (kr) kr.textContent = brlJS(RISCO_PCT / 100 * BANCA);
+
+  if (guardar){
+    try { localStorage.setItem("mesa-banca", String(BANCA)); } catch (e) {}
+  }
+}
+
+function restaurarBanca(){
+  let guardada = null;
+  try { guardada = localStorage.getItem("mesa-banca"); } catch (e) {}
+  const campo = document.getElementById("f-banca");
+  if (guardada && parseFloat(guardada) > 0){
+    if (campo) campo.value = guardada;
+    aplicarBanca(guardada, false);
+  }
+}
+
+function bancaPadrao(){
+  try { localStorage.removeItem("mesa-banca"); } catch (e) {}
+  const campo = document.getElementById("f-banca");
+  if (campo) campo.value = BANCA_INICIAL;
+  aplicarBanca(BANCA_INICIAL, false);
+}
+
+document.addEventListener("DOMContentLoaded", restaurarBanca);
+
+const CORES_IMG = {bg:"#151A21", pan:"#1B222B", line:"#28313D",
+                   tx:"#E7ECF3", tx2:"#94A1B2", tx3:"#66707E"};
+const FONTE = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+
+function _linhas(ctx, texto, largura, max){
+  const palavras = String(texto || "").split(/\s+/).filter(Boolean);
+  const saida = [];
+  let linha = "", sobrou = false;
+  for (let i = 0; i < palavras.length; i++){
+    const teste = linha ? linha + " " + palavras[i] : palavras[i];
+    if (ctx.measureText(teste).width > largura && linha){
+      if (saida.length === max - 1){ sobrou = true; break; }   // não cabe mais linha
+      saida.push(linha); linha = palavras[i];
+    } else {
+      linha = teste;
+    }
+  }
+  if (linha) saida.push(linha);
+  // texto cortado sempre termina em reticências, senão a frase mente por omissão
+  if (sobrou && saida.length){
+    let corte = saida[saida.length-1];
+    while (corte.length > 4 && ctx.measureText(corte + "…").width > largura) corte = corte.slice(0,-1);
+    saida[saida.length-1] = corte.replace(/[ ,;:]+$/, "") + "…";
+  }
+  return saida;
+}
+
+function _imagem(src){
+  return new Promise(ok => {
+    if (!src) return ok(null);
+    const im = new Image();
+    im.onload = () => ok(im);
+    im.onerror = () => ok(null);
+    im.src = src;
+  });
+}
+
+async function montarImagem(card){
+  const d = JSON.parse(card.dataset.img);
+  const escudos = [...card.querySelectorAll("img.esc")].map(i => i.src);
+  const [ec, ef] = await Promise.all([_imagem(escudos[0]), _imagem(escudos[1])]);
+
+  const S = 1080, P = 66;
+  const cv = document.createElement("canvas");
+  cv.width = S; cv.height = S;
+  const c = cv.getContext("2d");
+
+  c.fillStyle = CORES_IMG.bg; c.fillRect(0,0,S,S);
+  c.fillStyle = d.cor;        c.fillRect(0,0,S,9);
+
+  // marca d'água: entra antes do conteúdo, para ficar atrás e não atrapalhar a leitura
+  if (MARCA){
+    c.save();
+    c.translate(S/2, S/2); c.rotate(-24 * Math.PI / 180);
+    c.textAlign = "center"; c.textBaseline = "middle";
+    c.font = `800 92px ${FONTE}`;
+    c.fillStyle = "rgba(255,255,255,.055)";
+    c.fillText(MARCA, 0, 0);
+    c.restore();
+    c.textAlign = "left";
+  }
+
+  // cabeçalho: a marca, o nome e o @
+  desenharMarca(c, P, 42, 38);
+  c.textBaseline = "alphabetic";
+  const xNome = P + 52;
+  c.font = `700 25px ${FONTE}`; c.fillStyle = CORES_IMG.tx;
+  c.fillText("MESA", xNome, 72);
+  const lgNome = c.measureText("MESA").width;
+  c.font = `400 25px ${FONTE}`; c.fillStyle = CORES_IMG.tx2;
+  c.fillText(" de Análise", xNome + lgNome, 72);
+  if (MARCA){
+    const lgTudo = lgNome + c.measureText(" de Análise").width;
+    c.font = `700 21px ${FONTE}`; c.fillStyle = CORES_IMG.tx3;
+    c.fillText(MARCA, xNome + lgTudo + 20, 72);
+  }
+  c.font = `700 21px ${FONTE}`;
+  c.textAlign = "right"; c.fillStyle = CORES_IMG.tx3;
+  c.fillText(String(d.data || "").toUpperCase(), S-P, 74);
+  c.textAlign = "left";
+
+  // hora + etiqueta
+  c.font = `700 52px ${FONTE}`; c.fillStyle = CORES_IMG.tx;
+  c.fillText(d.hora || "", P, 168);
+  const larguraHora = c.measureText(d.hora || "").width;
+  const et = d.live ? d.etiqueta : "PRÉ-LIVE";
+  c.font = `800 22px ${FONTE}`;
+  const larguraEt = c.measureText(et).width;
+  const exBg = d.live ? "rgba(239,95,95,.14)" : "rgba(76,126,243,.14)";
+  const exTx = d.live ? "#F58A8A" : "#8FB0F7";
+  c.fillStyle = exBg;
+  c.beginPath(); c.roundRect(P + larguraHora + 22, 138, larguraEt + 34, 40, 20); c.fill();
+  c.fillStyle = exTx; c.fillText(et, P + larguraHora + 39, 165);
+
+  // times
+  let y = 250;
+  for (const [nome, im] of [[d.casa, ec], [d.fora, ef]]){
+    if (im){ c.drawImage(im, P, y-42, 54, 54); }
+    else {
+      c.fillStyle = CORES_IMG.pan;
+      c.beginPath(); c.arc(P+27, y-15, 27, 0, 7); c.fill();
+      c.fillStyle = CORES_IMG.tx3; c.font = `800 24px ${FONTE}`;
+      c.textAlign = "center"; c.fillText((nome||"?")[0].toUpperCase(), P+27, y-6); c.textAlign = "left";
+    }
+    c.fillStyle = CORES_IMG.tx; c.font = `650 42px ${FONTE}`;
+    c.fillText(_linhas(c, nome, S - P*2 - 80, 1)[0] || "", P + 76, y);
+    y += 76;
+  }
+  c.fillStyle = CORES_IMG.tx3; c.font = `400 25px ${FONTE}`;
+  c.fillText(d.liga || "", P, y - 4);
+
+  // divisória
+  y += 34;
+  c.fillStyle = CORES_IMG.line; c.fillRect(P, y, S - P*2, 1);
+
+  // método e mercado
+  y += 56;
+  c.fillStyle = d.cor; c.font = `800 24px ${FONTE}`;
+  c.fillText(String(d.metodo || "").toUpperCase(), P, y);
+  y += 48;
+  c.fillStyle = CORES_IMG.tx; c.font = `600 36px ${FONTE}`;
+  for (const l of _linhas(c, d.mercado, S - P*2, 2)){ c.fillText(l, P, y); y += 44; }
+
+  // motivo
+  y += 14;
+  c.fillStyle = CORES_IMG.tx2; c.font = `400 27px ${FONTE}`;
+  for (const l of _linhas(c, d.motivo, S - P*2, 4)){ c.fillText(l, P, y); y += 38; }
+
+  // números, ancorados acima da tarja de advertência
+  const BANDA = Math.round(S * 0.10);      // a norma pede no mínimo 10% da peça
+  const cx = S - P*2, bh = 132, by = S - BANDA - 26 - bh;
+
+  // o espaço que sobrar entre o motivo e os números vira leitura ao vivo:
+  // quantas linhas couberem, sem nunca invadir os números
+  const sobra = by - 34 - y;
+  const MINIMO = 20 + 34 + 34;          // respiro + rótulo + uma linha de texto
+  if (d.seguir && sobra >= MINIMO){
+    y += 20;
+    c.fillStyle = "#34C48A"; c.font = `700 21px ${FONTE}`;
+    c.fillText("SEGUIR SE", P, y);
+    y += 34;
+    const cabem = Math.max(1, Math.min(4, Math.floor((by - 34 - y) / 34)));
+    c.fillStyle = CORES_IMG.tx2; c.font = `400 25px ${FONTE}`;
+    for (const l of _linhas(c, d.seguir, S - P*2, cabem)){ c.fillText(l, P, y); y += 34; }
+  }
+  c.fillStyle = CORES_IMG.pan;
+  c.beginPath(); c.roundRect(P, by, cx/2 - 7, bh, 12); c.fill();
+  c.beginPath(); c.roundRect(P + cx/2 + 7, by, cx/2 - 7, bh, 12); c.fill();
+
+  const bloco = (x, rot, val, sub) => {
+    c.fillStyle = CORES_IMG.tx3; c.font = `700 21px ${FONTE}`;
+    c.fillText(rot.toUpperCase(), x + 26, by + 44);
+    c.fillStyle = CORES_IMG.tx;  c.font = `650 46px ${FONTE}`;
+    c.fillText(val, x + 26, by + 100);
+    if (sub){
+      const w = c.measureText(val).width;
+      c.fillStyle = CORES_IMG.tx2; c.font = `600 26px ${FONTE}`;
+      c.fillText(sub, x + 26 + w + 14, by + 100);
+    }
+  };
+  bloco(P, d.rotOdd, d.odd);
+  // a imagem sai com a banca que está na tela agora, não com a do arquivo
+  const reais = (typeof BANCA === "number" && d.stakeNum != null)
+    ? "· " + brlJS(d.stakeNum / 100 * BANCA) : d.reais;
+  bloco(P + cx/2 + 7, "stake", d.stake, reais);
+
+  // tarja de advertência — ocupa os 10% de baixo, em fundo próprio para contrastar
+  c.fillStyle = "#0A0D11"; c.fillRect(0, S - BANDA, S, BANDA);
+  c.fillStyle = "#3A4756"; c.fillRect(0, S - BANDA, S, 1);
+  c.textAlign = "center";
+  c.fillStyle = "#E7ECF3"; c.font = `700 27px ${FONTE}`;
+  c.fillText(AVISO_FAZENDA, S/2, S - BANDA + 44);
+  c.fillStyle = "#94A1B2"; c.font = `600 22px ${FONTE}`;
+  c.fillText(AVISO_APOIO, S/2, S - BANDA + 80);
+  c.textAlign = "left";
+  return cv;
+}
+
+async function baixarImagem(botao, ev){
+  ev.preventDefault(); ev.stopPropagation();
+  const card = botao.closest("details.jogo");
+  const rotulo = botao.textContent;
+  botao.textContent = "gerando…";
+  try {
+    const cv = await montarImagem(card);
+    await new Promise(ok => cv.toBlob(b => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(b);
+      a.download = card.dataset.arquivo + ".png";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      ok();
+    }, "image/png"));
+  } catch (e) {
+    alert("Não deu para gerar a imagem: " + e.message);
+  }
+  botao.textContent = rotulo;
+}
+
+const $$ = s => [...document.querySelectorAll(s)];
+
+function _ativos(grupo){
+  return $$(`.chip[data-grupo="${grupo}"][aria-pressed="true"]`).map(b => b.dataset.valor);
+}
+
+function filtrar(){
+  const metodos = _ativos("metodo");
+  const tipos   = _ativos("tipo");
+  const liga    = document.getElementById("f-liga")?.value || "";
+  const busca   = (document.getElementById("f-busca")?.value || "").trim().toLowerCase();
+  const ordem   = document.getElementById("f-ordem")?.value || "hora";
+
+  let visiveis = [];
+  for (const c of $$("details.jogo")){
+    const d = c.dataset;
+    const ok =
+      (!metodos.length || metodos.includes(d.metodo)) &&
+      (!tipos.length   || tipos.includes(d.live === "1" ? "live" : "pre")) &&
+      (!liga  || d.liga === liga) &&
+      (!busca || d.busca.includes(busca));
+    c.classList.toggle("fora", !ok);
+    if (ok) visiveis.push(c);
+  }
+
+  // a grade é CSS grid: 'order' reposiciona sem mexer no HTML
+  const chave = {
+    hora:  c => c.dataset.hora,
+    stake: c => -parseFloat(c.dataset.stake),
+    conf:  c => -parseFloat(c.dataset.conf),
+  }[ordem];
+  visiveis
+    .slice()
+    .sort((a,b) => { const x = chave(a), y = chave(b); return x < y ? -1 : x > y ? 1 : 0; })
+    .forEach((c,i) => c.style.order = i);
+
+  const total = $$("details.jogo").length;
+  const cont = document.getElementById("f-conta");
+  if (cont) cont.textContent = visiveis.length === total
+    ? `${total} entrada(s)`
+    : `${visiveis.length} de ${total}`;
+  const vazio = document.getElementById("f-vazio");
+  if (vazio) vazio.style.display = visiveis.length ? "none" : "block";
+}
+
+function alternarChip(b){
+  b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true");
+  filtrar();
+}
+
+function limparFiltros(){
+  $$(".chip").forEach(b => b.setAttribute("aria-pressed","false"));
+  const l = document.getElementById("f-liga");   if (l) l.value = "";
+  const b = document.getElementById("f-busca");  if (b) b.value = "";
+  const o = document.getElementById("f-ordem");  if (o) o.value = "hora";
+  filtrar();
+}
+
+document.addEventListener("DOMContentLoaded", filtrar);
+
+// O botão de instalar só aparece quando o navegador diz que dá para instalar.
+let promptInstalar = null;
+
+window.addEventListener("beforeinstallprompt", ev => {
+  ev.preventDefault();
+  promptInstalar = ev;
+  const b = document.getElementById("b-instalar");
+  if (b) b.hidden = false;
+});
+
+window.addEventListener("appinstalled", () => {
+  promptInstalar = null;
+  const b = document.getElementById("b-instalar");
+  if (b) b.hidden = true;
+});
+
+async function instalar(){
+  if (promptInstalar){
+    promptInstalar.prompt();
+    await promptInstalar.userChoice;
+    promptInstalar = null;
+    const b = document.getElementById("b-instalar");
+    if (b) b.hidden = true;
+    return;
+  }
+  // iPhone e iPad não têm o prompt: lá a instalação é pelo menu Compartilhar
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  alert(ios
+    ? "No iPhone/iPad: toque em Compartilhar (o quadrado com a seta) e escolha "
+      + "\"Adicionar à Tela de Início\"."
+    : "Seu navegador não ofereceu a instalação. No Chrome, procure o ícone de instalar "
+      + "na barra de endereço, ou o menu ⋮ → \"Instalar aplicativo\".");
+}
+
+if ("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register(RAIZ_SITE + "sw.js", {scope: RAIZ_SITE})
+      .catch(() => {});   // file:// e http não registram — a página funciona igual
+  });
+}
+</script></body></html>
